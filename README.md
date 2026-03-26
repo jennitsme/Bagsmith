@@ -23,7 +23,13 @@ Bagsmith is an AI-powered app factory for Bags that helps users turn prompts int
 npm install
 ```
 
-### 2) Run in development
+### 2) Start Postgres (Docker)
+
+```bash
+docker compose up -d
+```
+
+### 3) Run in development
 
 ```bash
 npm run dev
