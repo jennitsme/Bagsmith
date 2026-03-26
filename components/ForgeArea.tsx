@@ -4,11 +4,20 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ArrowRight, Code, Database, Cpu, ShieldCheck, Rocket, CheckCircle2 } from 'lucide-react';
 
+const SOL_MINT = 'So11111111111111111111111111111111111111112';
+
 export function ForgeArea() {
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isDone, setIsDone] = useState(false);
+
+  const [inputMint, setInputMint] = useState(SOL_MINT);
+  const [outputMint, setOutputMint] = useState('');
+  const [amount, setAmount] = useState('1000000');
+  const [isFetchingQuote, setIsFetchingQuote] = useState(false);
+  const [quoteResult, setQuoteResult] = useState<any>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
 
   const handleGenerate = () => {
     if (!prompt) return;
@@ -16,7 +25,6 @@ export function ForgeArea() {
     setProgress(0);
     setIsDone(false);
 
-    // Simulate generation process
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -32,15 +40,50 @@ export function ForgeArea() {
     }, 150);
   };
 
+  const fetchLiveQuote = async () => {
+    setQuoteError(null);
+    setQuoteResult(null);
+
+    if (!inputMint.trim() || !outputMint.trim() || !amount.trim()) {
+      setQuoteError('inputMint, outputMint, and amount are required.');
+      return;
+    }
+
+    try {
+      setIsFetchingQuote(true);
+      const res = await fetch('/api/bags/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inputMint: inputMint.trim(),
+          outputMint: outputMint.trim(),
+          amount: amount.trim(),
+          slippageMode: 'auto',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || 'Failed to fetch quote');
+      }
+
+      setQuoteResult(data.quote);
+    } catch (err) {
+      setQuoteError(err instanceof Error ? err.message : 'Unexpected error');
+    } finally {
+      setIsFetchingQuote(false);
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col p-4 md:p-8 max-w-5xl mx-auto w-full relative">
       <div className="absolute inset-0 tech-grid opacity-20 pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col h-full justify-center">
+      <div className="relative z-10 flex flex-col h-full justify-center gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8 md:mb-12"
+          className="text-center mb-2 md:mb-4"
         >
           <h2 className="text-3xl md:text-5xl font-bold tracking-tighter uppercase mb-4">
             Forge Your <span className="text-[var(--neon)]">Mini-App</span>
@@ -102,7 +145,7 @@ export function ForgeArea() {
               >
                 <div className="brutal-border bg-[var(--surface)] p-4 md:p-6 rounded-sm relative">
                   <div className="absolute top-0 left-0 h-1 bg-[var(--neon)] transition-all duration-150 ease-linear" style={{ width: `${progress}%` }} />
-                  
+
                   <h3 className="text-lg md:text-xl font-bold uppercase mb-4 md:mb-6 flex items-center gap-2 md:gap-3">
                     {isDone ? (
                       <><CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 text-[var(--neon)]" /> App Successfully Deployed</>
@@ -119,7 +162,7 @@ export function ForgeArea() {
                   </div>
 
                   {isDone && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 }}
@@ -133,7 +176,7 @@ export function ForgeArea() {
                           Open Dashboard
                         </button>
                       </div>
-                      <button 
+                      <button
                         onClick={() => {
                           setPrompt('');
                           setIsDone(false);
@@ -149,6 +192,56 @@ export function ForgeArea() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+
+        <div className="relative max-w-4xl mx-auto w-full brutal-border bg-[var(--surface)] p-4 md:p-6 rounded-sm">
+          <h3 className="text-lg md:text-xl font-bold uppercase mb-4">Live Bags Trade Quote (Real API)</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 font-mono text-sm">
+            <input
+              value={inputMint}
+              onChange={(e) => setInputMint(e.target.value)}
+              placeholder="Input mint"
+              className="bg-[var(--bg)] brutal-border px-3 py-2 focus:outline-none"
+            />
+            <input
+              value={outputMint}
+              onChange={(e) => setOutputMint(e.target.value)}
+              placeholder="Output mint"
+              className="bg-[var(--bg)] brutal-border px-3 py-2 focus:outline-none"
+            />
+            <input
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="Amount (smallest unit)"
+              className="bg-[var(--bg)] brutal-border px-3 py-2 focus:outline-none"
+            />
+          </div>
+
+          <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center">
+            <button
+              onClick={fetchLiveQuote}
+              disabled={isFetchingQuote}
+              className="bg-[var(--neon)] text-black px-4 py-2 font-bold uppercase tracking-wider brutal-border disabled:opacity-50"
+            >
+              {isFetchingQuote ? 'Fetching...' : 'Get Live Quote'}
+            </button>
+            <p className="font-mono text-xs text-[var(--text-muted)]">
+              Tip: default input mint is SOL. Set output mint to token mint address on Solana.
+            </p>
+          </div>
+
+          {quoteError && (
+            <div className="mt-4 brutal-border border-red-500 text-red-400 bg-red-950/20 p-3 font-mono text-xs md:text-sm">
+              {quoteError}
+            </div>
+          )}
+
+          {quoteResult && (
+            <pre className="mt-4 brutal-border bg-[var(--bg)] p-3 md:p-4 overflow-auto text-xs md:text-sm font-mono max-h-[300px]">
+{JSON.stringify(quoteResult, null, 2)}
+            </pre>
+          )}
         </div>
       </div>
     </div>
