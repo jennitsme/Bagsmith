@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateStructuredConfig } from '@/lib/app-config-generator';
+import { enforceConfigPolicy, generateStructuredConfig } from '@/lib/app-config-generator';
+import { generateConfigWithAI } from '@/lib/ai-config';
 import type { AppType } from '@/lib/mini-apps';
 
 function isAppType(v: string): v is AppType {
@@ -14,6 +15,16 @@ export async function POST(req: NextRequest) {
   if (!isAppType(type)) return NextResponse.json({ ok: false, error: 'Invalid app type.' }, { status: 400 });
   if (!prompt.trim()) return NextResponse.json({ ok: false, error: 'Prompt is required.' }, { status: 400 });
 
-  const config = generateStructuredConfig(type, prompt.trim());
-  return NextResponse.json({ ok: true, type, config });
+  const cleanPrompt = prompt.trim();
+
+  const deterministic = generateStructuredConfig(type, cleanPrompt);
+  const aiConfig = await generateConfigWithAI(type, cleanPrompt).catch(() => null);
+  const config = enforceConfigPolicy(type, (aiConfig || deterministic) as Record<string, unknown>, cleanPrompt);
+
+  return NextResponse.json({
+    ok: true,
+    type,
+    config,
+    source: aiConfig ? 'ai+policy' : 'deterministic+policy',
+  });
 }
