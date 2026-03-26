@@ -8,6 +8,7 @@ import { appendForgeLog } from '@/lib/forge-logs';
 import { attachUserCookie, ensureUserId } from '@/lib/user-session';
 import { getAuthWallet } from '@/lib/auth-wallet';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { buildIdempotencyKey, claimIdempotencyKey } from '@/lib/idempotency';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
-    const rl = checkRateLimit(`${userId}:${authenticatedWallet}`, 15, 60_000);
+    const rl = await checkRateLimit(`${userId}:${authenticatedWallet}`, 15, 60_000);
     if (!rl.ok) {
       const res = NextResponse.json({ ok: false, error: 'Rate limit exceeded. Please retry shortly.' }, { status: 429 });
       if (shouldSetCookie) attachUserCookie(res, userId);
@@ -97,6 +98,24 @@ export async function POST(req: NextRequest) {
       });
       result.runId = runId;
       const res = NextResponse.json(result);
+      if (shouldSetCookie) attachUserCookie(res, userId);
+      return res;
+    }
+
+    const explicitIdempotencyKey = req.headers.get('idempotency-key');
+    const idemKey = buildIdempotencyKey({
+      scope: 'bags-forge-execute',
+      user: `${userId}:${authenticatedWallet}`,
+      payload: { prompt: prompt.trim(), inputMint: inputMint.trim(), outputMint: outputMint.trim(), amount: amount.trim() },
+      explicitKey: explicitIdempotencyKey,
+    });
+
+    const claimed = await claimIdempotencyKey(idemKey, 120_000);
+    if (!claimed) {
+      const res = NextResponse.json(
+        { ok: false, error: 'Duplicate execute request detected. Retry with a new idempotency key.' },
+        { status: 409 }
+      );
       if (shouldSetCookie) attachUserCookie(res, userId);
       return res;
     }

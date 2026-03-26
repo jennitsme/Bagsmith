@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma';
 import { getAuthWallet } from '@/lib/auth-wallet';
 import { createSwapTransaction, getTradeQuote, sendSignedTransaction } from '@/lib/bags-client';
 import { getDevWalletKeypair } from '@/lib/dev-wallet';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { buildIdempotencyKey, claimIdempotencyKey } from '@/lib/idempotency';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -57,6 +59,31 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       };
 
       if (executeOnchain) {
+        if (!wallet) {
+          return NextResponse.json({ ok: false, error: 'Unauthorized for on-chain execution.' }, { status: 401 });
+        }
+
+        const rl = await checkRateLimit(`app-use-exec:${wallet}:${app.id}`, 8, 60_000);
+        if (!rl.ok) {
+          return NextResponse.json({ ok: false, error: 'Rate limit exceeded. Please retry shortly.' }, { status: 429 });
+        }
+
+        const explicitIdempotencyKey = req.headers.get('idempotency-key');
+        const idemKey = buildIdempotencyKey({
+          scope: 'app-use-execute',
+          user: wallet,
+          payload: { appId: app.id, sourceRunId: app.sourceRunId },
+          explicitKey: explicitIdempotencyKey,
+        });
+
+        const claimed = await claimIdempotencyKey(idemKey, 120_000);
+        if (!claimed) {
+          return NextResponse.json(
+            { ok: false, error: 'Duplicate execute request detected. Retry with a new idempotency key.' },
+            { status: 409 }
+          );
+        }
+
         const sourceRun = await prisma.forgeRun.findUnique({ where: { id: app.sourceRunId } });
         if (!sourceRun) throw new Error('Source run not found for this app.');
 

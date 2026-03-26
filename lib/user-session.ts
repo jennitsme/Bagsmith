@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const COOKIE_NAME = 'bagsmith_uid';
+const COOKIE_SECURE = process.env.NODE_ENV === 'production';
 
 function makeUserId() {
   return `u_${crypto.randomUUID().replace(/-/g, '').slice(0, 18)}`;
@@ -21,7 +22,7 @@ export function attachUserCookie(res: NextResponse, userId: string) {
   res.cookies.set(COOKIE_NAME, userId, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: false,
+    secure: COOKIE_SECURE,
     path: '/',
     maxAge: 60 * 60 * 24 * 365,
   });

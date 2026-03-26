@@ -7,6 +7,8 @@ const NONCE_COOKIE = 'bagsmith_nonce';
 const AUTH_COOKIE = 'bagsmith_wallet';
 const AUTH_EXP_COOKIE = 'bagsmith_wallet_exp';
 
+const COOKIE_SECURE = process.env.NODE_ENV === 'production';
+
 export function makeNonce() {
   return crypto.randomUUID().replace(/-/g, '');
 }
@@ -15,7 +17,7 @@ export function setNonceCookie(res: NextResponse, nonce: string) {
   res.cookies.set(NONCE_COOKIE, nonce, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: false,
+    secure: COOKIE_SECURE,
     path: '/',
     maxAge: 60 * 10,
   });
@@ -36,7 +38,7 @@ export function setAuthWallet(res: NextResponse, wallet: string) {
   res.cookies.set(AUTH_COOKIE, wallet, {
     httpOnly: true,
     sameSite: 'lax',
-    secure: false,
+    secure: COOKIE_SECURE,
     path: '/',
     maxAge,
   });
@@ -44,7 +46,7 @@ export function setAuthWallet(res: NextResponse, wallet: string) {
   res.cookies.set(AUTH_EXP_COOKIE, String(expiresAt), {
     httpOnly: true,
     sameSite: 'lax',
-    secure: false,
+    secure: COOKIE_SECURE,
     path: '/',
     maxAge,
   });
