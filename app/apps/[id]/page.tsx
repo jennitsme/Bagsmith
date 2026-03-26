@@ -32,7 +32,14 @@ export default async function AppDetailPage({ params }: { params: { id: string }
           <div>Owner Wallet: <span className="break-all">{app.ownerWallet}</span></div>
           <div>Bags Fee Share: {app.feeShareBps} bps</div>
           <div>Bags Deployment Status: {app.status}</div>
-          {app.txProof && <div className="break-all text-green-400">Bags Tx Proof: {app.txProof}</div>}
+          {app.txProof && (
+            <div className="break-all text-green-400">
+              Bags Tx Proof:{' '}
+              <a href={`https://solscan.io/tx/${app.txProof}`} target="_blank" rel="noreferrer" className="underline">
+                {app.txProof}
+              </a>
+            </div>
+          )}
         </div>
 
         <div className="brutal-border bg-[var(--surface)] p-4">

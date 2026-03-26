@@ -151,7 +151,14 @@ export function AnalyticsOverview() {
                 <div className="break-all text-[var(--text-muted)]">prompt: {r.prompt}</div>
                 <div className="break-all">pair: {r.inputMint} → {r.outputMint}</div>
                 <div>amount: {r.amount}</div>
-                {r.signature && <div className="break-all text-green-400">signature: {r.signature}</div>}
+                {r.signature && (
+                  <div className="break-all text-green-400">
+                    signature:{' '}
+                    <a href={`https://solscan.io/tx/${r.signature}`} target="_blank" rel="noreferrer" className="underline">
+                      {r.signature}
+                    </a>
+                  </div>
+                )}
                 {r.error && <div className="break-all text-red-400">error: {r.error}</div>}
               </div>
             ))}

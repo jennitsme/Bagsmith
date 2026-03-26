@@ -215,7 +215,19 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
               <div>quoteFetched: {String(result?.stages?.quoteFetched)}</div>
               <div>swapCreated: {String(result?.stages?.swapCreated)}</div>
               <div>transactionSent: {String(result?.stages?.transactionSent)}</div>
-              {result.signature && <div className="break-all">signature: <span className="text-green-400">{result.signature}</span></div>}
+              {result.signature && (
+                <div className="break-all">
+                  signature:{' '}
+                  <a
+                    href={`https://solscan.io/tx/${result.signature}`}
+                    target="_blank"
+                    className="text-green-400 underline"
+                    rel="noreferrer"
+                  >
+                    {result.signature}
+                  </a>
+                </div>
+              )}
               {result.runId && <div className="break-all">runId: <span className="text-[var(--neon)]">{result.runId}</span></div>}
             </div>
 
