@@ -47,7 +47,7 @@ export function ForgeArea() {
           </h2>
           <p className="text-[var(--text-muted)] font-mono text-sm md:text-base max-w-2xl mx-auto">
             Describe your crypto mini-app (loyalty, referral, tipping, gated access).
-            Agent Forge will generate the logic, deploy smart contracts, and set up fee-sharing on Bags.
+            Bagsmith will generate the logic, deploy smart contracts, and set up fee-sharing on Bags.
           </p>
         </motion.div>
 
@@ -107,7 +107,7 @@ export function ForgeArea() {
                     {isDone ? (
                       <><CheckCircle2 className="w-5 h-5 md:w-6 md:h-6 text-[var(--neon)]" /> App Successfully Deployed</>
                     ) : (
-                      <><Cpu className="w-5 h-5 md:w-6 md:h-6 text-[var(--neon)]" /> Agent Forge is working...</>
+                      <><Cpu className="w-5 h-5 md:w-6 md:h-6 text-[var(--neon)]" /> Bagsmith is working...</>
                     )}
                   </h3>
 

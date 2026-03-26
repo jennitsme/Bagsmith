@@ -13,7 +13,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Agent Forge | AI App Factory for Bags',
+  title: 'Bagsmith | AI App Factory for Bags',
   description: 'Create crypto mini-apps via prompts, auto-deploy, and monetize via fee-sharing.',
 };
 

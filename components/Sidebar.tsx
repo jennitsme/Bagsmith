@@ -42,7 +42,7 @@ export function Sidebar({
               <div className="w-8 h-8 bg-[var(--neon)] rounded-sm flex items-center justify-center brutal-shadow">
                 <Zap className="w-5 h-5 text-black" />
               </div>
-              <h1 className="text-xl font-bold tracking-tighter uppercase">Agent Forge</h1>
+              <h1 className="text-xl font-bold tracking-tighter uppercase">Bagsmith</h1>
             </div>
             <button onClick={closeSidebar} className="md:hidden text-[var(--text-muted)] hover:text-white">
               <X className="w-6 h-6" />
