@@ -1,20 +1,33 @@
 'use client';
 
-import { Bell, Search, ChevronDown, Menu } from 'lucide-react';
+import Image from 'next/image';
+import { Bell, Search, ChevronDown, Menu, BadgeCheck } from 'lucide-react';
 
 function shortWallet(wallet: string) {
   return `${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
 }
 
+function formatRemaining(expiresAt: number | null) {
+  if (!expiresAt) return '-';
+  const sec = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return `${h}h ${m}m`;
+}
+
 export function TopNav({
   toggleSidebar,
   wallet,
+  profile,
+  expiresAt,
   onSignIn,
   onLogout,
   authLoading,
 }: {
   toggleSidebar: () => void;
   wallet: string | null;
+  profile: { displayName: string; avatarUrl: string; bio: string } | null;
+  expiresAt: number | null;
   onSignIn: () => void;
   onLogout: () => void;
   authLoading?: boolean;
@@ -53,8 +66,17 @@ export function TopNav({
             className="flex items-center gap-2 md:gap-3 brutal-border px-2 md:px-3 py-1.5 rounded-sm cursor-pointer hover:bg-[var(--surface-hover)] transition-colors"
             title="Click to logout"
           >
-            <div className="w-6 h-6 rounded-sm bg-gradient-to-br from-[var(--neon)] to-[var(--accent)]" />
-            <span className="text-sm font-bold hidden sm:inline-block">{shortWallet(wallet)}</span>
+            {profile?.avatarUrl ? (
+              <Image src={profile.avatarUrl} alt="avatar" width={24} height={24} className="w-6 h-6 rounded-sm object-cover" />
+            ) : (
+              <div className="w-6 h-6 rounded-sm bg-gradient-to-br from-[var(--neon)] to-[var(--accent)]" />
+            )}
+            <div className="hidden sm:flex flex-col items-start leading-tight">
+              <span className="text-sm font-bold">{profile?.displayName || shortWallet(wallet)}</span>
+              <span className="text-[10px] font-mono text-[var(--text-muted)] flex items-center gap-1">
+                <BadgeCheck className="w-3 h-3 text-[var(--neon)]" /> Verified Wallet Session · {formatRemaining(expiresAt)}
+              </span>
+            </div>
             <ChevronDown className="w-4 h-4 text-[var(--text-muted)] hidden sm:inline-block" />
           </button>
         ) : (

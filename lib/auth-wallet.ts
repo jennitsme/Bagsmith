@@ -5,6 +5,7 @@ import { PublicKey } from '@solana/web3.js';
 
 const NONCE_COOKIE = 'bagsmith_nonce';
 const AUTH_COOKIE = 'bagsmith_wallet';
+const AUTH_EXP_COOKIE = 'bagsmith_wallet_exp';
 
 export function makeNonce() {
   return crypto.randomUUID().replace(/-/g, '');
@@ -29,17 +30,35 @@ export function clearNonce(res: NextResponse) {
 }
 
 export function setAuthWallet(res: NextResponse, wallet: string) {
+  const maxAge = 60 * 60 * 24 * 30;
+  const expiresAt = Date.now() + maxAge * 1000;
+
   res.cookies.set(AUTH_COOKIE, wallet, {
     httpOnly: true,
     sameSite: 'lax',
     secure: false,
     path: '/',
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge,
+  });
+
+  res.cookies.set(AUTH_EXP_COOKIE, String(expiresAt), {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+    path: '/',
+    maxAge,
   });
 }
 
 export function clearAuthWallet(res: NextResponse) {
   res.cookies.set(AUTH_COOKIE, '', { path: '/', maxAge: 0 });
+  res.cookies.set(AUTH_EXP_COOKIE, '', { path: '/', maxAge: 0 });
+}
+
+export function getAuthExpiry(req: NextRequest) {
+  const raw = req.cookies.get(AUTH_EXP_COOKIE)?.value;
+  const n = raw ? Number(raw) : NaN;
+  return Number.isFinite(n) ? n : null;
 }
 
 export function getAuthWallet(req: NextRequest) {

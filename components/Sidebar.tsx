@@ -21,12 +21,14 @@ export function Sidebar({
   isOpen,
   closeSidebar,
   wallet,
+  profile,
 }: {
   activeTab: string;
   setActiveTab: (id: string) => void;
   isOpen: boolean;
   closeSidebar: () => void;
   wallet: string | null;
+  profile: { displayName: string; avatarUrl: string; bio: string } | null;
 }) {
   return (
     <>
@@ -85,7 +87,7 @@ export function Sidebar({
               <span className="font-mono text-xs text-[var(--text-muted)] group-hover:text-white/70 transition-colors">
                 {wallet ? 'Connected' : 'Not Connected'}
               </span>
-              <span className="font-mono text-sm font-bold truncate w-32">{wallet ? shortWallet(wallet) : '-'}</span>
+              <span className="font-mono text-sm font-bold truncate w-32">{wallet ? (profile?.displayName || shortWallet(wallet)) : '-'}</span>
             </div>
           </div>
         </div>

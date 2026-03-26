@@ -24,13 +24,26 @@ export default function Home() {
   const [selectedTemplate, setSelectedTemplate] = useState<MiniAppTemplate | null>(null);
 
   const [wallet, setWallet] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [profile, setProfile] = useState<{ displayName: string; avatarUrl: string; bio: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   const loadSession = async () => {
     const res = await fetch('/api/auth/me', { cache: 'no-store' });
     const data = await res.json();
-    if (res.ok && data?.ok) setWallet(data.wallet || null);
+    if (res.ok && data?.ok) {
+      setWallet(data.wallet || null);
+      setExpiresAt(data.expiresAt ?? null);
+
+      if (data.wallet) {
+        const p = await fetch('/api/profile/me', { cache: 'no-store' });
+        const pd = await p.json();
+        if (p.ok && pd?.ok) setProfile(pd.profile);
+      } else {
+        setProfile(null);
+      }
+    }
   };
 
   useEffect(() => {
@@ -69,6 +82,7 @@ export default function Home() {
       }
 
       setWallet(verifyData.wallet || walletAddress);
+      await loadSession();
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Unexpected auth error');
     } finally {
@@ -79,6 +93,8 @@ export default function Home() {
   const logout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     setWallet(null);
+    setExpiresAt(null);
+    setProfile(null);
   };
 
   return (
@@ -92,12 +108,15 @@ export default function Home() {
         isOpen={isSidebarOpen}
         closeSidebar={() => setIsSidebarOpen(false)}
         wallet={wallet}
+        profile={profile}
       />
 
       <div className="flex-1 flex flex-col relative overflow-hidden w-full">
         <TopNav
           toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           wallet={wallet}
+          profile={profile}
+          expiresAt={expiresAt}
           onSignIn={signInWithWallet}
           onLogout={logout}
           authLoading={authLoading}
@@ -121,7 +140,9 @@ export default function Home() {
           )}
           {activeTab === 'analytics' && <AnalyticsOverview />}
           {activeTab === 'security' && <SecurityArea />}
-          {activeTab === 'settings' && <SettingsArea />}
+          {activeTab === 'settings' && (
+            <SettingsArea wallet={wallet} profile={profile} expiresAt={expiresAt} onProfileUpdated={loadSession} />
+          )}
         </main>
       </div>
     </div>
