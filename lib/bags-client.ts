@@ -8,7 +8,15 @@ export type TradeQuoteParams = {
   slippageBps?: number;
 };
 
-export async function getTradeQuote(params: TradeQuoteParams) {
+type BagsApiResponse<T = unknown> = {
+  success?: boolean;
+  response?: T;
+  error?: string;
+  message?: string;
+  [key: string]: unknown;
+};
+
+async function bagsFetch<T = unknown>(path: string, init?: RequestInit): Promise<BagsApiResponse<T>> {
   const apiKey = process.env.BAGS_API_KEY;
   if (!apiKey) {
     throw new Error('Missing BAGS_API_KEY');
@@ -16,6 +24,31 @@ export async function getTradeQuote(params: TradeQuoteParams) {
 
   const baseUrl = process.env.BAGS_API_BASE_URL || DEFAULT_BASE_URL;
 
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...init,
+    headers: {
+      'x-api-key': apiKey,
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+    },
+    cache: 'no-store',
+  });
+
+  const data = (await response.json().catch(() => null)) as BagsApiResponse<T> | null;
+
+  if (!response.ok) {
+    const errorMessage = data?.message || data?.error || `Bags API error (${response.status})`;
+    throw new Error(errorMessage);
+  }
+
+  if (!data) {
+    throw new Error('Empty response from Bags API');
+  }
+
+  return data;
+}
+
+export async function getTradeQuote(params: TradeQuoteParams) {
   const search = new URLSearchParams({
     inputMint: params.inputMint,
     outputMint: params.outputMint,
@@ -27,21 +60,22 @@ export async function getTradeQuote(params: TradeQuoteParams) {
     search.set('slippageBps', String(params.slippageBps));
   }
 
-  const response = await fetch(`${baseUrl}/trade/quote?${search.toString()}`, {
-    method: 'GET',
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-    },
-    cache: 'no-store',
+  return bagsFetch(`/trade/quote?${search.toString()}`, { method: 'GET' });
+}
+
+export async function createSwapTransaction(params: { quoteResponse: unknown; userPublicKey: string }) {
+  return bagsFetch<{ swapTransaction: string }>(`/trade/swap`, {
+    method: 'POST',
+    body: JSON.stringify({
+      quoteResponse: params.quoteResponse,
+      userPublicKey: params.userPublicKey,
+    }),
   });
+}
 
-  const data = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    const errorMessage = data?.message || data?.error || `Bags API error (${response.status})`;
-    throw new Error(errorMessage);
-  }
-
-  return data;
+export async function sendSignedTransaction(transaction: string) {
+  return bagsFetch<string>(`/solana/send-transaction`, {
+    method: 'POST',
+    body: JSON.stringify({ transaction }),
+  });
 }

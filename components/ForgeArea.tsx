@@ -18,6 +18,9 @@ export function ForgeArea() {
   const [isFetchingQuote, setIsFetchingQuote] = useState(false);
   const [quoteResult, setQuoteResult] = useState<any>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [isExecutingSwap, setIsExecutingSwap] = useState(false);
+  const [swapSignature, setSwapSignature] = useState<string | null>(null);
+  const [swapError, setSwapError] = useState<string | null>(null);
 
   const handleGenerate = () => {
     if (!prompt) return;
@@ -43,6 +46,8 @@ export function ForgeArea() {
   const fetchLiveQuote = async () => {
     setQuoteError(null);
     setQuoteResult(null);
+    setSwapSignature(null);
+    setSwapError(null);
 
     if (!inputMint.trim() || !outputMint.trim() || !amount.trim()) {
       setQuoteError('inputMint, outputMint, and amount are required.');
@@ -72,6 +77,41 @@ export function ForgeArea() {
       setQuoteError(err instanceof Error ? err.message : 'Unexpected error');
     } finally {
       setIsFetchingQuote(false);
+    }
+  };
+
+  const executeSwap = async () => {
+    setSwapError(null);
+    setSwapSignature(null);
+
+    if (!quoteResult) {
+      setSwapError('Fetch a live quote first.');
+      return;
+    }
+
+    try {
+      setIsExecutingSwap(true);
+      const res = await fetch('/api/bags/swap/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quote: quoteResult }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || 'Failed to execute swap');
+      }
+
+      const signature = data?.signature || data?.send?.response;
+      if (!signature) {
+        throw new Error('Swap submitted but no signature returned.');
+      }
+
+      setSwapSignature(signature);
+    } catch (err) {
+      setSwapError(err instanceof Error ? err.message : 'Unexpected error');
+    } finally {
+      setIsExecutingSwap(false);
     }
   };
 
@@ -218,13 +258,20 @@ export function ForgeArea() {
             />
           </div>
 
-          <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="mt-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:flex-wrap">
             <button
               onClick={fetchLiveQuote}
               disabled={isFetchingQuote}
               className="bg-[var(--neon)] text-black px-4 py-2 font-bold uppercase tracking-wider brutal-border disabled:opacity-50"
             >
               {isFetchingQuote ? 'Fetching...' : 'Get Live Quote'}
+            </button>
+            <button
+              onClick={executeSwap}
+              disabled={isExecutingSwap || !quoteResult}
+              className="bg-white text-black px-4 py-2 font-bold uppercase tracking-wider brutal-border disabled:opacity-50"
+            >
+              {isExecutingSwap ? 'Executing Swap...' : 'Execute Swap (Sign + Send)'}
             </button>
             <p className="font-mono text-xs text-[var(--text-muted)]">
               Tip: default input mint is SOL. Set output mint to token mint address on Solana.
@@ -234,6 +281,18 @@ export function ForgeArea() {
           {quoteError && (
             <div className="mt-4 brutal-border border-red-500 text-red-400 bg-red-950/20 p-3 font-mono text-xs md:text-sm">
               {quoteError}
+            </div>
+          )}
+
+          {swapError && (
+            <div className="mt-4 brutal-border border-red-500 text-red-400 bg-red-950/20 p-3 font-mono text-xs md:text-sm">
+              {swapError}
+            </div>
+          )}
+
+          {swapSignature && (
+            <div className="mt-4 brutal-border border-green-500 text-green-400 bg-green-950/20 p-3 font-mono text-xs md:text-sm break-all">
+              Swap submitted. Signature: {swapSignature}
             </div>
           )}
 
