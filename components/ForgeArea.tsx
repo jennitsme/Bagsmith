@@ -38,6 +38,15 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
     setResult(null);
   }, [selectedTemplate]);
 
+  useEffect(() => {
+    fetch('/api/integrations/bags/status', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok) setBagsStatus(d.status);
+      })
+      .catch(() => undefined);
+  }, [result?.signature]);
+
   const publishRun = async () => {
     if (!result?.runId) return;
     setPublishing(true);
@@ -184,16 +193,26 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
           <h3 className="text-lg md:text-xl font-bold uppercase mb-3">Bags Integration Status</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs md:text-sm">
             <div className="p-3 brutal-border bg-[var(--bg)]">
-              API: <span className="text-[var(--neon)]">Connected (x-api-key)</span>
+              API:{' '}
+              <span className={bagsStatus?.apiConnected ? 'text-[var(--neon)]' : 'text-red-400'}>
+                {bagsStatus?.apiConnected ? 'Connected (x-api-key)' : 'Not Connected'}
+              </span>
             </div>
             <div className="p-3 brutal-border bg-[var(--bg)]">
-              Network: <span className="text-[var(--neon)]">Bags Public API v2 (Solana)</span>
+              Network: <span className="text-[var(--neon)]">{bagsStatus?.network || 'Bags Public API v2 (Solana)'}</span>
+            </div>
+            <div className="p-3 brutal-border bg-[var(--bg)] break-all">
+              Base URL: <span className="text-[var(--neon)]">{bagsStatus?.baseUrl || '-'}</span>
             </div>
             <div className="p-3 brutal-border bg-[var(--bg)]">
-              Deployment Flow: <span className="text-[var(--neon)]">Quote → Swap Tx → Sign → Send</span>
-            </div>
-            <div className="p-3 brutal-border bg-[var(--bg)]">
-              Fee Sharing: <span className="text-[var(--text-muted)]">Manifest-ready (next: config tx)</span>
+              Last Tx:{' '}
+              {bagsStatus?.lastTxSignature ? (
+                <a href={`https://solscan.io/tx/${bagsStatus.lastTxSignature}`} target="_blank" rel="noreferrer" className="text-green-400 underline break-all">
+                  {bagsStatus.lastTxSignature}
+                </a>
+              ) : (
+                <span className="text-[var(--text-muted)]">No tx yet</span>
+              )}
             </div>
           </div>
         </div>
