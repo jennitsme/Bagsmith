@@ -48,3 +48,8 @@ npm run start
 ## Project Goal
 
 Bagsmith is designed to make Web3 product creation faster by combining AI-assisted generation, deployment workflows, and monetization primitives around the Bags ecosystem.
+
+## Hackathon Submission Assets
+
+- `SUBMISSION.md` — complete submission pack (architecture, proof checklist, demo script)
+- `HACKATHON_FORM_ANSWERS.md` — draft copy-paste answers for application form
