@@ -25,6 +25,9 @@ export function BagsNativeWizard({ appId }: { appId: string }) {
   const [launchLoading, setLaunchLoading] = useState(false);
   const [launchMsg, setLaunchMsg] = useState<string | null>(null);
 
+  const [jobMsg, setJobMsg] = useState<string | null>(null);
+  const [jobLoading, setJobLoading] = useState(false);
+
   const refreshVerification = useCallback(async () => {
     const res = await fetch(`/api/apps/${appId}/verify-status`, { cache: 'no-store' });
     const data = await res.json();
@@ -144,6 +147,42 @@ export function BagsNativeWizard({ appId }: { appId: string }) {
     }
   };
 
+  const refreshVerificationAsync = async () => {
+    setJobLoading(true);
+    setJobMsg(null);
+    try {
+      const enqueueRes = await fetch('/api/jobs/enqueue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'verify-refresh', appId }),
+      });
+      const enqueueData = await enqueueRes.json();
+      if (!enqueueRes.ok || !enqueueData?.ok) throw new Error(enqueueData?.error || 'Failed to enqueue refresh');
+
+      const jobId = enqueueData.jobId;
+      let done = false;
+      for (let i = 0; i < 12; i += 1) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const stRes = await fetch(`/api/jobs/${jobId}`, { cache: 'no-store' });
+        const stData = await stRes.json();
+        const state = stData?.job?.state;
+        if (state === 'completed') {
+          done = true;
+          break;
+        }
+        if (state === 'failed') throw new Error(stData?.job?.failedReason || 'Verification refresh job failed');
+      }
+
+      if (!done) throw new Error('Verification refresh timed out');
+      await refreshVerification();
+      setJobMsg('Verification refresh completed via async job.');
+    } catch (e) {
+      setJobMsg(e instanceof Error ? e.message : 'Async verification refresh failed');
+    } finally {
+      setJobLoading(false);
+    }
+  };
+
   const badge = (ok: boolean) => (
     <span className={`px-2 py-0.5 brutal-border text-[10px] ${ok ? 'text-green-400 border-green-500/40' : 'text-red-400 border-red-500/40'}`}>
       {ok ? 'done' : 'pending'}
@@ -205,6 +244,16 @@ export function BagsNativeWizard({ appId }: { appId: string }) {
         </button>
       </div>
       {claimMsg && <div className="font-mono text-xs text-[var(--text-muted)]">{claimMsg}</div>}
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <button onClick={refreshVerification} className="px-3 py-2 brutal-border font-mono text-xs hover:bg-[var(--surface-hover)]">
+          Refresh Verification (sync)
+        </button>
+        <button onClick={refreshVerificationAsync} disabled={jobLoading} className="px-3 py-2 brutal-border font-mono text-xs bg-white text-black font-bold disabled:opacity-50">
+          {jobLoading ? 'Refreshing...' : 'Refresh Verification (async job)'}
+        </button>
+      </div>
+      {jobMsg && <div className="font-mono text-xs text-[var(--text-muted)]">{jobMsg}</div>}
 
       {verification?.txProof && (
         <a href={`https://solscan.io/tx/${verification.txProof}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-green-400 underline break-all">
