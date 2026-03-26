@@ -1,5 +1,3 @@
-# Bags Hackathon — Draft Form Answers (Copy/Paste)
-
 ## Project Name
 Bagsmith
 
