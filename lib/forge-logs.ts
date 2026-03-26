@@ -40,26 +40,71 @@ export async function appendForgeLog(log: ForgeLog) {
   await fs.writeFile(LOG_FILE, JSON.stringify(logs.slice(0, 1000), null, 2), 'utf8');
 }
 
-export async function getAnalyticsSummary() {
-  const logs = await readForgeLogs();
-  const totalRuns = logs.length;
-  const successfulRuns = logs.filter((l) => l.success).length;
-  const executeRuns = logs.filter((l) => l.mode === 'execute').length;
-  const successfulExecutes = logs.filter((l) => l.mode === 'execute' && l.success).length;
+function filterByRange(logs: ForgeLog[], range: '24h' | '7d' | '30d' | 'all') {
+  if (range === 'all') return logs;
+  const now = Date.now();
+  const windowMs = range === '24h' ? 24 * 60 * 60 * 1000 : range === '7d' ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000;
+  return logs.filter((l) => {
+    const t = new Date(l.createdAt).getTime();
+    return Number.isFinite(t) && now - t <= windowMs;
+  });
+}
 
-  const totalInputAmount = logs
+export async function getAnalyticsSummary(range: '24h' | '7d' | '30d' | 'all' = 'all') {
+  const logs = await readForgeLogs();
+  const scoped = filterByRange(logs, range);
+
+  const totalRuns = scoped.length;
+  const successfulRuns = scoped.filter((l) => l.success).length;
+  const executeRuns = scoped.filter((l) => l.mode === 'execute').length;
+  const successfulExecutes = scoped.filter((l) => l.mode === 'execute' && l.success).length;
+
+  const totalInputAmount = scoped
     .filter((l) => l.success)
     .reduce((sum, l) => sum + (Number(l.amount) || 0), 0);
 
   const successRate = totalRuns > 0 ? (successfulRuns / totalRuns) * 100 : 0;
 
   return {
+    range,
     totalRuns,
     successfulRuns,
     executeRuns,
     successfulExecutes,
     successRate,
     totalInputAmount,
-    recent: logs.slice(0, 20),
+    recent: scoped.slice(0, 20),
+    all: scoped,
   };
+}
+
+export function logsToCsv(logs: ForgeLog[]) {
+  const header = ['id', 'createdAt', 'prompt', 'inputMint', 'outputMint', 'amount', 'mode', 'success', 'signature', 'wallet', 'error'];
+  const escape = (v: unknown) => {
+    const s = String(v ?? '');
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  };
+
+  const rows = logs.map((l) =>
+    [
+      l.id,
+      l.createdAt,
+      l.prompt,
+      l.inputMint,
+      l.outputMint,
+      l.amount,
+      l.mode,
+      l.success,
+      l.signature ?? '',
+      l.wallet ?? '',
+      l.error ?? '',
+    ]
+      .map(escape)
+      .join(',')
+  );
+
+  return [header.join(','), ...rows].join('\n');
 }

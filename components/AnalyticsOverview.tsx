@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Activity, CheckCircle2, RefreshCw, XCircle, Wallet } from 'lucide-react';
+import { Activity, CheckCircle2, RefreshCw, XCircle, Wallet, Download } from 'lucide-react';
 
 type RecentLog = {
   id: string;
@@ -32,12 +32,13 @@ export function AnalyticsOverview() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [range, setRange] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
 
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/analytics/summary', { cache: 'no-store' });
+      const res = await fetch(`/api/analytics/summary?range=${range}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'Failed to load analytics');
       setSummary(data.summary);
@@ -46,11 +47,11 @@ export function AnalyticsOverview() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [range]);
 
   useEffect(() => {
     fetchSummary();
-  }, []);
+  }, [fetchSummary]);
 
   const stats = useMemo(
     () => [
@@ -65,15 +66,32 @@ export function AnalyticsOverview() {
   return (
     <div className="flex-1 p-4 md:p-8 overflow-y-auto">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between gap-4 mb-6 md:mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 md:mb-8">
           <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tighter">Real Analytics</h2>
-          <button
-            onClick={fetchSummary}
-            disabled={loading}
-            className="px-4 py-2 text-xs md:text-sm font-mono brutal-border bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {(['24h', '7d', '30d', 'all'] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={`px-3 py-2 text-xs md:text-sm font-mono brutal-border transition-colors ${range === r ? 'bg-[var(--neon)] text-black font-bold' : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)]'}`}
+              >
+                {r}
+              </button>
+            ))}
+            <button
+              onClick={fetchSummary}
+              disabled={loading}
+              className="px-4 py-2 text-xs md:text-sm font-mono brutal-border bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            </button>
+            <a
+              href={`/api/analytics/export?range=${range}`}
+              className="px-4 py-2 text-xs md:text-sm font-mono brutal-border bg-white text-black font-bold hover:bg-[var(--neon)] transition-colors flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Export CSV
+            </a>
+          </div>
         </div>
 
         {error && <div className="mb-6 brutal-border border-red-500 text-red-400 bg-red-950/20 p-3 font-mono text-sm">{error}</div>}
