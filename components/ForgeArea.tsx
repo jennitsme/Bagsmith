@@ -22,6 +22,12 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
   const [appTitle, setAppTitle] = useState('');
   const [appDescription, setAppDescription] = useState('');
   const [generatedConfig, setGeneratedConfig] = useState<any>(null);
+  const [publishedAppId, setPublishedAppId] = useState<string | null>(null);
+  const [feeBaseMint, setFeeBaseMint] = useState('');
+  const [feeClaimers, setFeeClaimers] = useState('');
+  const [feeBps, setFeeBps] = useState('');
+  const [feeSharingLoading, setFeeSharingLoading] = useState(false);
+  const [feeSharingMsg, setFeeSharingMsg] = useState<string | null>(null);
   const [bagsStatus, setBagsStatus] = useState<any>(null);
   const [txScope, setTxScope] = useState<'self' | 'global'>('self');
   const [txHistory, setTxHistory] = useState<any[]>([]);
@@ -42,6 +48,9 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
     setAppDescription(selectedTemplate.desc);
     setError(null);
     setResult(null);
+    setGeneratedConfig(null);
+    setPublishedAppId(null);
+    setFeeSharingMsg(null);
   }, [selectedTemplate]);
 
   useEffect(() => {
@@ -87,11 +96,35 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'Publish failed');
+      setPublishedAppId(data?.app?.id || null);
       setResult((prev: any) => ({ ...prev, published: true }));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Publish failed');
     } finally {
       setPublishing(false);
+    }
+  };
+
+  const setupFeeSharing = async () => {
+    if (!publishedAppId) return;
+    setFeeSharingLoading(true);
+    setFeeSharingMsg(null);
+    try {
+      const claimersArray = feeClaimers.split(',').map((s) => s.trim()).filter(Boolean);
+      const basisPointsArray = feeBps.split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n));
+
+      const res = await fetch(`/api/apps/${publishedAppId}/fee-sharing/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseMint: feeBaseMint, claimersArray, basisPointsArray }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Fee-sharing setup failed');
+      setFeeSharingMsg('Fee-sharing setup submitted successfully.');
+    } catch (e) {
+      setFeeSharingMsg(e instanceof Error ? e.message : 'Fee-sharing setup failed');
+    } finally {
+      setFeeSharingLoading(false);
     }
   };
 
@@ -158,6 +191,14 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
             </p>
           )}
         </motion.div>
+
+        <div className="brutal-border bg-[var(--surface)] p-3 md:p-4 rounded-sm">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 font-mono text-xs">
+            <div className={`p-2 brutal-border ${generatedConfig ? 'bg-[var(--neon)] text-black' : 'bg-[var(--bg)]'}`}>1) Generate Config</div>
+            <div className={`p-2 brutal-border ${publishedAppId ? 'bg-[var(--neon)] text-black' : 'bg-[var(--bg)]'}`}>2) Deploy App</div>
+            <div className={`p-2 brutal-border ${feeSharingMsg?.toLowerCase().includes('successfully') ? 'bg-[var(--neon)] text-black' : 'bg-[var(--bg)]'}`}>3) Setup Fee Share</div>
+          </div>
+        </div>
 
         <div className="brutal-border bg-[var(--surface)] p-4 md:p-6 rounded-sm">
           <label className="block font-mono text-xs text-[var(--text-muted)] mb-2">Prompt</label>
@@ -325,21 +366,40 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
                 <input value={appDescription} onChange={(e)=>setAppDescription(e.target.value)} placeholder="Short app description" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
               </div>
 
-              <div className="flex items-center gap-3 flex-wrap">
+              <div className="space-y-2">
+                <div className="font-mono text-xs text-[var(--text-muted)]">Step 1: Generate structured app config</div>
                 <button onClick={generateConfig} className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">
                   Generate Structured Config
                 </button>
+                {generatedConfig && (
+                  <pre className="mt-2 brutal-border bg-[var(--bg)] p-2 overflow-auto text-xs font-mono max-h-[180px]">
+{JSON.stringify(generatedConfig, null, 2)}
+                  </pre>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="font-mono text-xs text-[var(--text-muted)]">Step 2: Deploy app to Bags directory</div>
                 <button onClick={publishRun} disabled={!result.runId || publishing || result.published} className="px-3 py-2 brutal-border bg-white text-black font-mono text-xs md:text-sm disabled:opacity-50">
                   {result.published ? 'Deployed in App Directory' : publishing ? 'Publishing...' : 'Deploy to Bags App Directory'}
                 </button>
-                <a href="/apps" target="_blank" className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">Open Bags App Directory</a>
+                {publishedAppId && <div className="font-mono text-xs text-[var(--neon)] break-all">appId: {publishedAppId}</div>}
               </div>
 
-              {generatedConfig && (
-                <pre className="mt-2 brutal-border bg-[var(--bg)] p-2 overflow-auto text-xs font-mono max-h-[180px]">
-{JSON.stringify(generatedConfig, null, 2)}
-                </pre>
-              )}
+              <div className="space-y-2">
+                <div className="font-mono text-xs text-[var(--text-muted)]">Step 3: Setup fee sharing</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                  <input value={feeBaseMint} onChange={(e)=>setFeeBaseMint(e.target.value)} placeholder="Base mint" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
+                  <input value={feeClaimers} onChange={(e)=>setFeeClaimers(e.target.value)} placeholder="Claimers CSV" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
+                  <input value={feeBps} onChange={(e)=>setFeeBps(e.target.value)} placeholder="BPS CSV (sum 10000)" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
+                </div>
+                <button onClick={setupFeeSharing} disabled={!publishedAppId || feeSharingLoading} className="px-3 py-2 brutal-border font-mono text-xs md:text-sm disabled:opacity-50 hover:bg-[var(--surface-hover)]">
+                  {feeSharingLoading ? 'Setting up...' : 'Setup Fee Share'}
+                </button>
+                {feeSharingMsg && <div className="font-mono text-xs text-[var(--text-muted)] break-all">{feeSharingMsg}</div>}
+              </div>
+
+              <a href="/apps" target="_blank" className="inline-block px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">Open Bags App Directory</a>
             </div>
 
             <pre className="mt-4 brutal-border bg-[var(--bg)] p-3 md:p-4 overflow-auto text-xs md:text-sm font-mono max-h-[340px]">
