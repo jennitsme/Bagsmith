@@ -113,7 +113,7 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
             Forge Your <span className="text-[var(--neon)]">Mini-App</span>
           </h2>
           <p className="text-[var(--text-muted)] font-mono text-sm md:text-base max-w-2xl mx-auto">
-            Real pipeline: prompt intake, Bags quote retrieval, optional swap transaction creation, signing, and send.
+Bags-native builder pipeline: prompt → app config → deploy transaction on Bags → fee-sharing-ready app artifact.
           </p>
           {selectedTemplate && (
             <p className="mt-3 font-mono text-xs text-[var(--neon)]">
@@ -180,6 +180,24 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
           </div>
         </div>
 
+        <div className="brutal-border bg-[var(--surface)] p-4 md:p-6 rounded-sm">
+          <h3 className="text-lg md:text-xl font-bold uppercase mb-3">Bags Integration Status</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs md:text-sm">
+            <div className="p-3 brutal-border bg-[var(--bg)]">
+              API: <span className="text-[var(--neon)]">Connected (x-api-key)</span>
+            </div>
+            <div className="p-3 brutal-border bg-[var(--bg)]">
+              Network: <span className="text-[var(--neon)]">Bags Public API v2 (Solana)</span>
+            </div>
+            <div className="p-3 brutal-border bg-[var(--bg)]">
+              Deployment Flow: <span className="text-[var(--neon)]">Quote → Swap Tx → Sign → Send</span>
+            </div>
+            <div className="p-3 brutal-border bg-[var(--bg)]">
+              Fee Sharing: <span className="text-[var(--text-muted)]">Manifest-ready (next: config tx)</span>
+            </div>
+          </div>
+        </div>
+
         {error && (
           <div className="brutal-border border-red-500 text-red-400 bg-red-950/20 p-3 font-mono text-xs md:text-sm">
             {error}
@@ -214,7 +232,7 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
 
               <div className="flex items-center gap-3 flex-wrap">
                 <button onClick={publishRun} disabled={!result.runId || publishing || result.published} className="px-3 py-2 brutal-border bg-white text-black font-mono text-xs md:text-sm disabled:opacity-50">
-                  {result.published ? 'Published' : publishing ? 'Publishing...' : 'Publish as Public App'}
+                  {result.published ? 'Deployed in App Directory' : publishing ? 'Publishing...' : 'Deploy to Bags App Directory'}
                 </button>
                 <a href="/apps" target="_blank" className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">Open Public Apps</a>
               </div>

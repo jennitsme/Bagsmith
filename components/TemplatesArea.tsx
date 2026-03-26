@@ -12,11 +12,11 @@ export function TemplatesArea({ onUseTemplate }: { onUseTemplate: (template: Min
           <div className="w-10 h-10 md:w-12 md:h-12 bg-[var(--accent)] rounded-sm flex items-center justify-center brutal-shadow flex-shrink-0">
             <Layers className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tighter">Smart Contract Templates</h2>
+          <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tighter">Bags App Templates</h2>
         </div>
 
         <p className="text-[var(--text-muted)] font-mono text-sm md:text-base mb-8 md:mb-12 max-w-2xl">
-          Select a real template, auto-fill the Forge inputs, then run the pipeline.
+          Select a Bags-native template, auto-fill builder inputs, then deploy through the Bags transaction pipeline.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">

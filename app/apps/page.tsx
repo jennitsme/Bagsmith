@@ -24,8 +24,8 @@ export default function PublicAppsPage() {
               <div className="text-xs font-mono text-[var(--neon)] uppercase">{a.type}</div>
               <div className="font-bold text-lg mt-1">{a.title}</div>
               <div className="text-sm text-[var(--text-muted)] mt-2 line-clamp-3">{a.description}</div>
-              <div className="font-mono text-xs mt-3">Fee Share: {a.feeShareBps} bps</div>
-              <div className="font-mono text-xs">Status: {a.status}</div>
+              <div className="font-mono text-xs mt-3">Bags Fee Share: {a.feeShareBps} bps</div>
+              <div className="font-mono text-xs">Bags Deployment Status: {a.status}</div>
               {a.txProof && <div className="font-mono text-xs text-green-400 break-all mt-2">tx: {a.txProof}</div>}
               <Link href={`/apps/${a.id}`} className="inline-block mt-3 px-3 py-2 brutal-border font-mono text-xs hover:bg-[var(--surface-hover)]">Open App</Link>
             </div>

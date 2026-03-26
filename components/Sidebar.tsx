@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { Terminal, Zap, BarChart2, Shield, Settings, Wallet, Layers, X } from 'lucide-react';
 
 const navItems = [
-  { icon: Terminal, label: 'Forge', id: 'forge' },
+  { icon: Terminal, label: 'Builder', id: 'forge' },
   { icon: Layers, label: 'Templates', id: 'templates' },
   { icon: BarChart2, label: 'Analytics', id: 'analytics' },
   { icon: Shield, label: 'Security', id: 'security' },

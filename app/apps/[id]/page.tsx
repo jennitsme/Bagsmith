@@ -29,9 +29,9 @@ export default async function AppDetailPage({ params }: { params: { id: string }
 
         <div className="brutal-border bg-[var(--surface)] p-4 font-mono text-sm space-y-2">
           <div>Owner Wallet: <span className="break-all">{app.ownerWallet}</span></div>
-          <div>Fee Share: {app.feeShareBps} bps</div>
-          <div>Status: {app.status}</div>
-          {app.txProof && <div className="break-all text-green-400">Tx Proof: {app.txProof}</div>}
+          <div>Bags Fee Share: {app.feeShareBps} bps</div>
+          <div>Bags Deployment Status: {app.status}</div>
+          {app.txProof && <div className="break-all text-green-400">Bags Tx Proof: {app.txProof}</div>}
         </div>
 
         <div className="brutal-border bg-[var(--surface)] p-4">
