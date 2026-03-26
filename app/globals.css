@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #030303;
+  --surface: #0a0a0a;
+  --surface-hover: #141414;
+  --line: #222222;
+  --neon: #ccff00;
+  --accent: #ff0055;
+  --text: #ffffff;
+  --text-muted: #888888;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-space), sans-serif;
+  overflow-x: hidden;
+}
+
+.tech-grid {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+}
+
+.brutal-border {
+  border: 1px solid var(--line);
+}
+
+.brutal-shadow {
+  box-shadow: 4px 4px 0px 0px var(--line);
+}
+
+.brutal-shadow-hover {
+  box-shadow: 4px 4px 0px 0px var(--neon);
+}
+
+.glass-panel {
+  background: rgba(10, 10, 10, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--line);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--neon);
+}
