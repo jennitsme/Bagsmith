@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { UseAppButton } from '@/components/UseAppButton';
 
 async function getApp(id: string) {
   const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
@@ -39,7 +40,7 @@ export default async function AppDetailPage({ params }: { params: { id: string }
           <pre className="font-mono text-xs overflow-auto">{JSON.stringify(config, null, 2)}</pre>
         </div>
 
-        <button className="px-4 py-2 brutal-border bg-[var(--neon)] text-black font-bold uppercase text-sm">Use App</button>
+        <UseAppButton appId={app.id} />
       </div>
     </div>
   );
