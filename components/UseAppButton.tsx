@@ -13,7 +13,9 @@ export function UseAppButton({ appId }: { appId: string }) {
       const res = await fetch(`/api/apps/${appId}/use`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'Failed to use app');
-      setMsg(`Success. Usage count: ${data.usageCount}`);
+
+      const actionMsg = data?.action?.message ? ` · ${data.action.message}` : '';
+      setMsg(`Success. Usage count: ${data.usageCount}${actionMsg}`);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Failed to use app');
     } finally {
