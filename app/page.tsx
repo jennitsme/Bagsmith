@@ -8,10 +8,12 @@ import { AnalyticsOverview } from '@/components/AnalyticsOverview';
 import { TemplatesArea } from '@/components/TemplatesArea';
 import { SecurityArea } from '@/components/SecurityArea';
 import { SettingsArea } from '@/components/SettingsArea';
+import type { MiniAppTemplate } from '@/lib/templates';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('forge');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<MiniAppTemplate | null>(null);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg)] text-[var(--text)]">
@@ -29,8 +31,15 @@ export default function Home() {
         <TopNav toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
         
         <main className="flex-1 overflow-y-auto relative">
-          {activeTab === 'forge' && <ForgeArea />}
-          {activeTab === 'templates' && <TemplatesArea />}
+          {activeTab === 'forge' && <ForgeArea selectedTemplate={selectedTemplate} />}
+          {activeTab === 'templates' && (
+            <TemplatesArea
+              onUseTemplate={(template) => {
+                setSelectedTemplate(template);
+                setActiveTab('forge');
+              }}
+            />
+          )}
           {activeTab === 'analytics' && <AnalyticsOverview />}
           {activeTab === 'security' && <SecurityArea />}
           {activeTab === 'settings' && <SettingsArea />}

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
+import type { MiniAppTemplate } from '@/lib/templates';
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 
-export function ForgeArea() {
+export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemplate | null }) {
   const [prompt, setPrompt] = useState('');
   const [inputMint, setInputMint] = useState(SOL_MINT);
   const [outputMint, setOutputMint] = useState('');
@@ -16,6 +17,17 @@ export function ForgeArea() {
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedTemplate) return;
+    setPrompt(selectedTemplate.prompt);
+    setInputMint(selectedTemplate.defaults.inputMint);
+    setOutputMint(selectedTemplate.defaults.outputMint);
+    setAmount(selectedTemplate.defaults.amount);
+    setExecuteSwap(selectedTemplate.defaults.executeSwap);
+    setError(null);
+    setResult(null);
+  }, [selectedTemplate]);
 
   const runForge = async () => {
     setError(null);
@@ -74,6 +86,11 @@ export function ForgeArea() {
           <p className="text-[var(--text-muted)] font-mono text-sm md:text-base max-w-2xl mx-auto">
             Real pipeline: prompt intake, Bags quote retrieval, optional swap transaction creation, signing, and send.
           </p>
+          {selectedTemplate && (
+            <p className="mt-3 font-mono text-xs text-[var(--neon)]">
+              Template loaded: {selectedTemplate.name}
+            </p>
+          )}
         </motion.div>
 
         <div className="brutal-border bg-[var(--surface)] p-4 md:p-6 rounded-sm">
