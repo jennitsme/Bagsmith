@@ -7,6 +7,8 @@ import { getDevWalletKeypair } from '@/lib/dev-wallet';
 import { getAuthWallet } from '@/lib/auth-wallet';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { buildIdempotencyKey, claimIdempotencyKey } from '@/lib/idempotency';
+import { swapExecuteRequestSchema, zodErrorMessage } from '@/lib/validation';
+import { assertSignerPolicy } from '@/lib/signer-policy';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,12 +22,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Rate limit exceeded. Please retry shortly.' }, { status: 429 });
     }
 
-    const body = await req.json();
-    const rawQuote = body?.quote;
-
-    if (!rawQuote) {
-      return NextResponse.json({ ok: false, error: 'Missing quote payload.' }, { status: 400 });
+    const parsedBody = swapExecuteRequestSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsedBody.success) {
+      return NextResponse.json({ ok: false, error: zodErrorMessage(parsedBody.error) || 'Invalid request body' }, { status: 400 });
     }
+
+    const rawQuote: any = parsedBody.data.quote;
 
     const explicitIdempotencyKey = req.headers.get('idempotency-key');
     const idemKey = buildIdempotencyKey({
@@ -43,7 +45,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const quoteResponse = rawQuote?.response ?? rawQuote;
+    const quoteResponse: any = rawQuote?.response ?? rawQuote;
+    const inputMint = quoteResponse?.inputMint;
+    const outputMint = quoteResponse?.outputMint;
+    const amount = quoteResponse?.inAmount || quoteResponse?.amount;
+
+    if (!inputMint || !outputMint || !amount) {
+      return NextResponse.json({ ok: false, error: 'Quote payload missing inputMint/outputMint/amount for signer policy.' }, { status: 400 });
+    }
+
+    assertSignerPolicy({ inputMint: String(inputMint), outputMint: String(outputMint), amount: String(amount) });
 
     const wallet = getDevWalletKeypair();
     const userPublicKey = wallet.publicKey.toBase58();

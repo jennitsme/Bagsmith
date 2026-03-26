@@ -8,6 +8,7 @@ import { createSwapTransaction, getTradeQuote, sendSignedTransaction } from '@/l
 import { getDevWalletKeypair } from '@/lib/dev-wallet';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { buildIdempotencyKey, claimIdempotencyKey } from '@/lib/idempotency';
+import { assertSignerPolicy } from '@/lib/signer-policy';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -86,6 +87,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
         const sourceRun = await prisma.forgeRun.findUnique({ where: { id: app.sourceRunId } });
         if (!sourceRun) throw new Error('Source run not found for this app.');
+
+        assertSignerPolicy({
+          inputMint: sourceRun.inputMint,
+          outputMint: sourceRun.outputMint,
+          amount: sourceRun.amount,
+        });
 
         const signer = getDevWalletKeypair();
         const quote = await getTradeQuote({

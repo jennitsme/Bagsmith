@@ -1,26 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTradeQuote } from '@/lib/bags-client';
-
-function isNonEmptyString(v: unknown): v is string {
-  return typeof v === 'string' && v.trim().length > 0;
-}
+import { quoteRequestSchema, zodErrorMessage } from '@/lib/validation';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-
-    const inputMint = body?.inputMint;
-    const outputMint = body?.outputMint;
-    const amount = body?.amount;
-    const slippageMode = body?.slippageMode;
-    const slippageBps = body?.slippageBps;
-
-    if (!isNonEmptyString(inputMint) || !isNonEmptyString(outputMint) || !isNonEmptyString(amount)) {
-      return NextResponse.json(
-        { ok: false, error: 'inputMint, outputMint, and amount are required.' },
-        { status: 400 }
-      );
+    const parsedBody = quoteRequestSchema.safeParse(await req.json().catch(() => ({})));
+    if (!parsedBody.success) {
+      return NextResponse.json({ ok: false, error: zodErrorMessage(parsedBody.error) || 'Invalid request body' }, { status: 400 });
     }
+
+    const { inputMint, outputMint, amount, slippageMode, slippageBps } = parsedBody.data;
 
     const quote = await getTradeQuote({
       inputMint: inputMint.trim(),

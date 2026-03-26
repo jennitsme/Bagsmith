@@ -9,18 +9,21 @@ import { attachUserCookie, ensureUserId } from '@/lib/user-session';
 import { getAuthWallet } from '@/lib/auth-wallet';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { buildIdempotencyKey, claimIdempotencyKey } from '@/lib/idempotency';
+import { forgeRequestSchema, zodErrorMessage } from '@/lib/validation';
+import { assertSignerPolicy } from '@/lib/signer-policy';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const prompt = body?.prompt;
-  const inputMint = body?.inputMint;
-  const outputMint = body?.outputMint;
-  const amount = body?.amount;
-  const executeSwap = Boolean(body?.executeSwap);
+  const parsedBody = forgeRequestSchema.safeParse(await req.json().catch(() => ({})));
+  if (!parsedBody.success) {
+    return NextResponse.json({ ok: false, error: zodErrorMessage(parsedBody.error) || 'Invalid request body' }, { status: 400 });
+  }
+
+  const { prompt, inputMint, outputMint, amount } = parsedBody.data;
+  const executeSwap = Boolean(parsedBody.data.executeSwap);
   const mode = executeSwap ? 'execute' : 'quote-only';
   const { userId, shouldSetCookie } = ensureUserId(req);
   const authenticatedWallet = getAuthWallet(req);
@@ -51,6 +54,10 @@ export async function POST(req: NextRequest) {
       );
       if (shouldSetCookie) attachUserCookie(res, userId);
       return res;
+    }
+
+    if (executeSwap) {
+      assertSignerPolicy({ inputMint: inputMint.trim(), outputMint: outputMint.trim(), amount: amount.trim() });
     }
 
     const wallet = getDevWalletKeypair();

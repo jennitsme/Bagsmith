@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createFeeShareConfig } from '@/lib/bags-client';
 import { getAuthWallet } from '@/lib/auth-wallet';
 import { prisma } from '@/lib/prisma';
+import { assertAppOwnership } from '@/lib/app-authz';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -23,8 +24,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       return NextResponse.json({ ok: false, error: 'basisPointsArray must sum to 10000.' }, { status: 400 });
     }
 
-    const app = await prisma.miniApp.findUnique({ where: { id: params.id } });
-    if (!app) return NextResponse.json({ ok: false, error: 'App not found.' }, { status: 404 });
+    let app;
+    try {
+      app = await assertAppOwnership(params.id, wallet);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unauthorized';
+      if (msg === 'App not found') return NextResponse.json({ ok: false, error: 'App not found.' }, { status: 404 });
+      if (msg.includes('Forbidden')) return NextResponse.json({ ok: false, error: msg }, { status: 403 });
+      throw e;
+    }
 
     const feeShare = await createFeeShareConfig({
       payer: wallet,
