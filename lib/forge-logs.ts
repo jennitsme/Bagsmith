@@ -3,6 +3,7 @@ import path from 'path';
 
 export type ForgeLog = {
   id: string;
+  userId: string;
   createdAt: string;
   prompt: string;
   inputMint: string;
@@ -37,7 +38,7 @@ export async function readForgeLogs(): Promise<ForgeLog[]> {
 export async function appendForgeLog(log: ForgeLog) {
   const logs = await readForgeLogs();
   logs.unshift(log);
-  await fs.writeFile(LOG_FILE, JSON.stringify(logs.slice(0, 1000), null, 2), 'utf8');
+  await fs.writeFile(LOG_FILE, JSON.stringify(logs.slice(0, 2000), null, 2), 'utf8');
 }
 
 function filterByRange(logs: ForgeLog[], range: '24h' | '7d' | '30d' | 'all') {
@@ -50,9 +51,17 @@ function filterByRange(logs: ForgeLog[], range: '24h' | '7d' | '30d' | 'all') {
   });
 }
 
-export async function getAnalyticsSummary(range: '24h' | '7d' | '30d' | 'all' = 'all') {
+export async function getAnalyticsSummary(
+  range: '24h' | '7d' | '30d' | 'all' = 'all',
+  opts?: { userId?: string; scope?: 'self' | 'global' }
+) {
   const logs = await readForgeLogs();
-  const scoped = filterByRange(logs, range);
+  const scope = opts?.scope ?? 'self';
+
+  const scopedByUser =
+    scope === 'global' ? logs : logs.filter((l) => (opts?.userId ? l.userId === opts.userId : false));
+
+  const scoped = filterByRange(scopedByUser, range);
 
   const totalRuns = scoped.length;
   const successfulRuns = scoped.filter((l) => l.success).length;
@@ -66,6 +75,7 @@ export async function getAnalyticsSummary(range: '24h' | '7d' | '30d' | 'all' = 
   const successRate = totalRuns > 0 ? (successfulRuns / totalRuns) * 100 : 0;
 
   return {
+    scope,
     range,
     totalRuns,
     successfulRuns,
@@ -79,7 +89,7 @@ export async function getAnalyticsSummary(range: '24h' | '7d' | '30d' | 'all' = 
 }
 
 export function logsToCsv(logs: ForgeLog[]) {
-  const header = ['id', 'createdAt', 'prompt', 'inputMint', 'outputMint', 'amount', 'mode', 'success', 'signature', 'wallet', 'error'];
+  const header = ['id', 'userId', 'createdAt', 'prompt', 'inputMint', 'outputMint', 'amount', 'mode', 'success', 'signature', 'wallet', 'error'];
   const escape = (v: unknown) => {
     const s = String(v ?? '');
     if (s.includes(',') || s.includes('"') || s.includes('\n')) {
@@ -91,6 +101,7 @@ export function logsToCsv(logs: ForgeLog[]) {
   const rows = logs.map((l) =>
     [
       l.id,
+      l.userId,
       l.createdAt,
       l.prompt,
       l.inputMint,

@@ -19,6 +19,7 @@ type RecentLog = {
 };
 
 type Summary = {
+  scope?: 'self' | 'global';
   totalRuns: number;
   successfulRuns: number;
   executeRuns: number;
@@ -33,21 +34,24 @@ export function AnalyticsOverview() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<'24h' | '7d' | '30d' | 'all'>('7d');
+  const [scope, setScope] = useState<'self' | 'global'>('self');
+  const [userId, setUserId] = useState<string | null>(null);
 
   const fetchSummary = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/analytics/summary?range=${range}`, { cache: 'no-store' });
+      const res = await fetch(`/api/analytics/summary?range=${range}&scope=${scope}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'Failed to load analytics');
       setSummary(data.summary);
+      setUserId(data.userId || null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unexpected error');
     } finally {
       setLoading(false);
     }
-  }, [range]);
+  }, [range, scope]);
 
   useEffect(() => {
     fetchSummary();
@@ -78,6 +82,15 @@ export function AnalyticsOverview() {
                 {r}
               </button>
             ))}
+            {(['self', 'global'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setScope(s)}
+                className={`px-3 py-2 text-xs md:text-sm font-mono brutal-border transition-colors ${scope === s ? 'bg-white text-black font-bold' : 'bg-[var(--surface)] hover:bg-[var(--surface-hover)]'}`}
+              >
+                {s}
+              </button>
+            ))}
             <button
               onClick={fetchSummary}
               disabled={loading}
@@ -86,7 +99,7 @@ export function AnalyticsOverview() {
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
             </button>
             <a
-              href={`/api/analytics/export?range=${range}`}
+              href={`/api/analytics/export?range=${range}&scope=${scope}`}
               className="px-4 py-2 text-xs md:text-sm font-mono brutal-border bg-white text-black font-bold hover:bg-[var(--neon)] transition-colors flex items-center gap-2"
             >
               <Download className="w-4 h-4" /> Export CSV
@@ -95,6 +108,11 @@ export function AnalyticsOverview() {
         </div>
 
         {error && <div className="mb-6 brutal-border border-red-500 text-red-400 bg-red-950/20 p-3 font-mono text-sm">{error}</div>}
+        {!error && (
+          <div className="mb-4 font-mono text-xs text-[var(--text-muted)]">
+            scope: {scope} {userId ? `• session user: ${userId}` : ''}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8 md:mb-12">
           {stats.map((stat, i) => (

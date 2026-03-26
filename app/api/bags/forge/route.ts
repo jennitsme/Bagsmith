@@ -5,6 +5,7 @@ import bs58 from 'bs58';
 import { getTradeQuote, createSwapTransaction, sendSignedTransaction } from '@/lib/bags-client';
 import { getDevWalletKeypair } from '@/lib/dev-wallet';
 import { appendForgeLog } from '@/lib/forge-logs';
+import { attachUserCookie, ensureUserId } from '@/lib/user-session';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
@@ -18,17 +19,22 @@ export async function POST(req: NextRequest) {
   const amount = body?.amount;
   const executeSwap = Boolean(body?.executeSwap);
   const mode = executeSwap ? 'execute' : 'quote-only';
+  const { userId, shouldSetCookie } = ensureUserId(req);
 
   try {
     if (!isNonEmptyString(prompt)) {
-      return NextResponse.json({ ok: false, error: 'prompt is required.' }, { status: 400 });
+      const res = NextResponse.json({ ok: false, error: 'prompt is required.' }, { status: 400 });
+      if (shouldSetCookie) attachUserCookie(res, userId);
+      return res;
     }
 
     if (!isNonEmptyString(inputMint) || !isNonEmptyString(outputMint) || !isNonEmptyString(amount)) {
-      return NextResponse.json(
+      const res = NextResponse.json(
         { ok: false, error: 'inputMint, outputMint, and amount are required.' },
         { status: 400 }
       );
+      if (shouldSetCookie) attachUserCookie(res, userId);
+      return res;
     }
 
     const wallet = getDevWalletKeypair();
@@ -43,6 +49,7 @@ export async function POST(req: NextRequest) {
 
     const result: any = {
       ok: true,
+      userId,
       stages: {
         promptAccepted: true,
         quoteFetched: true,
@@ -60,6 +67,7 @@ export async function POST(req: NextRequest) {
     if (!executeSwap) {
       await appendForgeLog({
         id: crypto.randomUUID(),
+        userId,
         createdAt: new Date().toISOString(),
         prompt: prompt.trim(),
         inputMint: inputMint.trim(),
@@ -71,7 +79,9 @@ export async function POST(req: NextRequest) {
         wallet: userPublicKey,
         error: null,
       });
-      return NextResponse.json(result);
+      const res = NextResponse.json(result);
+      if (shouldSetCookie) attachUserCookie(res, userId);
+      return res;
     }
 
     const quoteResponse = quote?.response ?? quote;
@@ -98,6 +108,7 @@ export async function POST(req: NextRequest) {
 
     await appendForgeLog({
       id: crypto.randomUUID(),
+      userId,
       createdAt: new Date().toISOString(),
       prompt: prompt.trim(),
       inputMint: inputMint.trim(),
@@ -110,13 +121,16 @@ export async function POST(req: NextRequest) {
       error: null,
     });
 
-    return NextResponse.json(result);
+    const res = NextResponse.json(result);
+    if (shouldSetCookie) attachUserCookie(res, userId);
+    return res;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
 
     if (isNonEmptyString(prompt) && isNonEmptyString(inputMint) && isNonEmptyString(outputMint) && isNonEmptyString(amount)) {
       await appendForgeLog({
         id: crypto.randomUUID(),
+        userId,
         createdAt: new Date().toISOString(),
         prompt: prompt.trim(),
         inputMint: inputMint.trim(),
@@ -130,6 +144,8 @@ export async function POST(req: NextRequest) {
       }).catch(() => undefined);
     }
 
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    const res = NextResponse.json({ ok: false, error: message }, { status: 500 });
+    if (shouldSetCookie) attachUserCookie(res, userId);
+    return res;
   }
 }
