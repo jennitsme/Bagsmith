@@ -45,6 +45,13 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
         if (d?.ok) setBagsStatus(d.status);
       })
       .catch(() => undefined);
+
+    fetch('/api/integrations/bags/tx-history', { cache: 'no-store' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d?.ok) setTxHistory(d.runs || []);
+      })
+      .catch(() => undefined);
   }, [result?.signature]);
 
   const publishRun = async () => {
@@ -215,6 +222,26 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
               )}
             </div>
           </div>
+
+          <div className="mt-4">
+            <h4 className="font-bold uppercase text-sm mb-2">Recent Bags Transactions</h4>
+            <div className="space-y-2">
+              {txHistory.map((tx) => (
+                <div key={tx.id} className="p-2 brutal-border bg-[var(--bg)] font-mono text-xs flex flex-col gap-1">
+                  <div>
+                    {tx.mode} · {tx.success ? 'success' : 'failed'} · amount: {tx.amount}
+                  </div>
+                  <div className="break-all text-[var(--text-muted)]">{tx.inputMint} → {tx.outputMint}</div>
+                  {tx.signature && (
+                    <a href={`https://solscan.io/tx/${tx.signature}`} target="_blank" rel="noreferrer" className="text-green-400 underline break-all">
+                      {tx.signature}
+                    </a>
+                  )}
+                </div>
+              ))}
+              {txHistory.length === 0 && <div className="font-mono text-xs text-[var(--text-muted)]">No recent tx history.</div>}
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -265,7 +292,7 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
                 <button onClick={publishRun} disabled={!result.runId || publishing || result.published} className="px-3 py-2 brutal-border bg-white text-black font-mono text-xs md:text-sm disabled:opacity-50">
                   {result.published ? 'Deployed in App Directory' : publishing ? 'Publishing...' : 'Deploy to Bags App Directory'}
                 </button>
-                <a href="/apps" target="_blank" className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">Open Public Apps</a>
+                <a href="/apps" target="_blank" className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">Open Bags App Directory</a>
               </div>
             </div>
 
