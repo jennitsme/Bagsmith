@@ -7,6 +7,7 @@ import { getDevWalletKeypair } from '@/lib/dev-wallet';
 import { appendForgeLog } from '@/lib/forge-logs';
 import { attachUserCookie, ensureUserId } from '@/lib/user-session';
 import { getAuthWallet } from '@/lib/auth-wallet';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
@@ -26,6 +27,13 @@ export async function POST(req: NextRequest) {
   try {
     if (!authenticatedWallet) {
       const res = NextResponse.json({ ok: false, error: 'Unauthorized. Connect wallet and sign in first.' }, { status: 401 });
+      if (shouldSetCookie) attachUserCookie(res, userId);
+      return res;
+    }
+
+    const rl = checkRateLimit(`${userId}:${authenticatedWallet}`, 15, 60_000);
+    if (!rl.ok) {
+      const res = NextResponse.json({ ok: false, error: 'Rate limit exceeded. Please retry shortly.' }, { status: 429 });
       if (shouldSetCookie) attachUserCookie(res, userId);
       return res;
     }
@@ -72,8 +80,9 @@ export async function POST(req: NextRequest) {
     };
 
     if (!executeSwap) {
+      const runId = crypto.randomUUID();
       await appendForgeLog({
-        id: crypto.randomUUID(),
+        id: runId,
         userId,
         createdAt: new Date().toISOString(),
         prompt: prompt.trim(),
@@ -86,6 +95,7 @@ export async function POST(req: NextRequest) {
         wallet: userPublicKey,
         error: null,
       });
+      result.runId = runId;
       const res = NextResponse.json(result);
       if (shouldSetCookie) attachUserCookie(res, userId);
       return res;
@@ -113,8 +123,9 @@ export async function POST(req: NextRequest) {
     result.signature = sendResult?.response || null;
     result.send = sendResult;
 
+    const runId = crypto.randomUUID();
     await appendForgeLog({
-      id: crypto.randomUUID(),
+      id: runId,
       userId,
       createdAt: new Date().toISOString(),
       prompt: prompt.trim(),
@@ -128,6 +139,7 @@ export async function POST(req: NextRequest) {
       error: null,
     });
 
+    result.runId = runId;
     const res = NextResponse.json(result);
     if (shouldSetCookie) attachUserCookie(res, userId);
     return res;

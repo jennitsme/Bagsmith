@@ -8,7 +8,8 @@ const navItems = [
   { icon: Layers, label: 'Templates', id: 'templates' },
   { icon: BarChart2, label: 'Analytics', id: 'analytics' },
   { icon: Shield, label: 'Security', id: 'security' },
-  { icon: Settings, label: 'Profile', id: 'settings' },
+  { icon: Settings, label: 'Profile', id: 'profile' },
+  { icon: Settings, label: 'Settings', id: 'settings' },
 ];
 
 function shortWallet(wallet: string) {

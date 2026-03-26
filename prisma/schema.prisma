@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ForgeRun {
+  id         String   @id @default(cuid())
+  userId     String
+  wallet     String?
+  prompt     String
+  inputMint  String
+  outputMint String
+  amount     String
+  mode       String
+  success    Boolean
+  signature  String?
+  error      String?
+  isPublic   Boolean  @default(false)
+  publicTitle String?
+  createdAt  DateTime @default(now())
+}
+
+model UserProfile {
+  wallet     String   @id
+  displayName String
+  bio        String
+  avatarUrl  String
+  updatedAt  DateTime @updatedAt
+}
+
+model UserSetting {
+  wallet               String @id
+  deploymentAlerts     Boolean @default(true)
+  weeklyAnalytics      Boolean @default(false)
+  securityWarnings     Boolean @default(true)
+  updatedAt            DateTime @updatedAt
+}

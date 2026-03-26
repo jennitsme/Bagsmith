@@ -10,6 +10,7 @@ import { AnalyticsOverview } from '@/components/AnalyticsOverview';
 import { TemplatesArea } from '@/components/TemplatesArea';
 import { SecurityArea } from '@/components/SecurityArea';
 import { SettingsArea } from '@/components/SettingsArea';
+import { ProfileArea } from '@/components/ProfileArea';
 import type { MiniAppTemplate } from '@/lib/templates';
 
 type PhantomProvider = {
@@ -140,9 +141,10 @@ export default function Home() {
           )}
           {activeTab === 'analytics' && <AnalyticsOverview />}
           {activeTab === 'security' && <SecurityArea />}
-          {activeTab === 'settings' && (
-            <SettingsArea wallet={wallet} profile={profile} expiresAt={expiresAt} onProfileUpdated={loadSession} />
+          {activeTab === 'profile' && (
+            <ProfileArea wallet={wallet} profile={profile} expiresAt={expiresAt} onProfileUpdated={loadSession} />
           )}
+          {activeTab === 'settings' && <SettingsArea wallet={wallet} />}
         </main>
       </div>
     </div>

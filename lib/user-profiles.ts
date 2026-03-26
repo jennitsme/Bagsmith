@@ -1,5 +1,4 @@
-import { promises as fs } from 'fs';
-import path from 'path';
+import { prisma } from '@/lib/prisma';
 
 export type UserProfile = {
   wallet: string;
@@ -9,61 +8,52 @@ export type UserProfile = {
   updatedAt: string;
 };
 
-const DATA_DIR = path.join(process.cwd(), 'data');
-const FILE = path.join(DATA_DIR, 'user-profiles.json');
-
-async function ensureStore() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  try {
-    await fs.access(FILE);
-  } catch {
-    await fs.writeFile(FILE, '{}', 'utf8');
-  }
-}
-
-async function readAll(): Promise<Record<string, UserProfile>> {
-  await ensureStore();
-  const raw = await fs.readFile(FILE, 'utf8');
-  const parsed = JSON.parse(raw);
-  return parsed && typeof parsed === 'object' ? parsed : {};
-}
-
-async function writeAll(data: Record<string, UserProfile>) {
-  await fs.writeFile(FILE, JSON.stringify(data, null, 2), 'utf8');
-}
-
 function shortWallet(wallet: string) {
   return `${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
 }
 
 export async function getOrCreateProfile(wallet: string): Promise<UserProfile> {
-  const all = await readAll();
-  if (all[wallet]) return all[wallet];
-
-  const profile: UserProfile = {
-    wallet,
-    displayName: shortWallet(wallet),
-    bio: '',
-    avatarUrl: '',
-    updatedAt: new Date().toISOString(),
-  };
-
-  all[wallet] = profile;
-  await writeAll(all);
-  return profile;
+  let profile = await prisma.userProfile.findUnique({ where: { wallet } });
+  if (!profile) {
+    profile = await prisma.userProfile.create({
+      data: { wallet, displayName: shortWallet(wallet), bio: '', avatarUrl: '' },
+    });
+  }
+  return { ...profile, updatedAt: profile.updatedAt.toISOString() };
 }
 
 export async function updateProfile(wallet: string, patch: Partial<Pick<UserProfile, 'displayName' | 'bio' | 'avatarUrl'>>) {
-  const all = await readAll();
-  const current = all[wallet] || (await getOrCreateProfile(wallet));
-  const next: UserProfile = {
-    ...current,
-    displayName: (patch.displayName ?? current.displayName).slice(0, 60),
-    bio: (patch.bio ?? current.bio).slice(0, 240),
-    avatarUrl: (patch.avatarUrl ?? current.avatarUrl).slice(0, 500),
-    updatedAt: new Date().toISOString(),
-  };
-  all[wallet] = next;
-  await writeAll(all);
-  return next;
+  await getOrCreateProfile(wallet);
+  const next = await prisma.userProfile.update({
+    where: { wallet },
+    data: {
+      displayName: (patch.displayName ?? undefined)?.slice(0, 60),
+      bio: (patch.bio ?? undefined)?.slice(0, 240),
+      avatarUrl: (patch.avatarUrl ?? undefined)?.slice(0, 500),
+    },
+  });
+  return { ...next, updatedAt: next.updatedAt.toISOString() };
+}
+
+export async function getOrCreateSettings(wallet: string) {
+  let s = await prisma.userSetting.findUnique({ where: { wallet } });
+  if (!s) {
+    s = await prisma.userSetting.create({ data: { wallet } });
+  }
+  return s;
+}
+
+export async function updateSettings(
+  wallet: string,
+  patch: Partial<{ deploymentAlerts: boolean; weeklyAnalytics: boolean; securityWarnings: boolean }>
+) {
+  await getOrCreateSettings(wallet);
+  return prisma.userSetting.update({
+    where: { wallet },
+    data: {
+      deploymentAlerts: typeof patch.deploymentAlerts === 'boolean' ? patch.deploymentAlerts : undefined,
+      weeklyAnalytics: typeof patch.weeklyAnalytics === 'boolean' ? patch.weeklyAnalytics : undefined,
+      securityWarnings: typeof patch.securityWarnings === 'boolean' ? patch.securityWarnings : undefined,
+    },
+  });
 }

@@ -17,6 +17,7 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
   const [isRunning, setIsRunning] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     if (!selectedTemplate) return;
@@ -28,6 +29,26 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
     setError(null);
     setResult(null);
   }, [selectedTemplate]);
+
+  const publishRun = async () => {
+    if (!result?.runId) return;
+    setPublishing(true);
+    try {
+      const title = prompt.slice(0, 60);
+      const res = await fetch('/api/apps/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ runId: result.runId, title }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Publish failed');
+      setResult((prev: any) => ({ ...prev, published: true }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Publish failed');
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   const runForge = async () => {
     setError(null);
@@ -169,6 +190,14 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
               <div>swapCreated: {String(result?.stages?.swapCreated)}</div>
               <div>transactionSent: {String(result?.stages?.transactionSent)}</div>
               {result.signature && <div className="break-all">signature: <span className="text-green-400">{result.signature}</span></div>}
+              {result.runId && <div className="break-all">runId: <span className="text-[var(--neon)]">{result.runId}</span></div>}
+            </div>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <button onClick={publishRun} disabled={!result.runId || publishing || result.published} className="px-3 py-2 brutal-border bg-white text-black font-mono text-xs md:text-sm disabled:opacity-50">
+                {result.published ? 'Published' : publishing ? 'Publishing...' : 'Publish as Public App'}
+              </button>
+              <a href="/apps" target="_blank" className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">Open Public Apps</a>
             </div>
 
             <pre className="mt-4 brutal-border bg-[var(--bg)] p-3 md:p-4 overflow-auto text-xs md:text-sm font-mono max-h-[340px]">
