@@ -1,37 +1,7 @@
 import { prisma } from '@/lib/prisma';
+import { generateStructuredConfig } from '@/lib/app-config-generator';
 
 export type AppType = 'referral' | 'gated-access' | 'tipping' | 'launch-campaign' | 'loyalty';
-
-function deriveConfig(type: AppType, prompt: string) {
-  if (type === 'referral') {
-    return {
-      rewardBps: 500,
-      campaignDays: 30,
-      antiAbuse: true,
-      leaderboard: true,
-      notes: prompt.slice(0, 180),
-    };
-  }
-
-  if (type === 'gated-access') {
-    return {
-      nftCollection: 'REQUIRED_BY_OWNER',
-      allowlistFallback: true,
-      accessRule: 'holder-only',
-      notes: prompt.slice(0, 180),
-    };
-  }
-
-  if (type === 'tipping') {
-    return {
-      protocolFeeBps: 100,
-      minimumTip: '1000',
-      notes: prompt.slice(0, 180),
-    };
-  }
-
-  return { notes: prompt.slice(0, 180) };
-}
 
 export async function createMiniAppFromRun(params: {
   userId: string;
@@ -45,7 +15,7 @@ export async function createMiniAppFromRun(params: {
   if (!run) throw new Error('Run not found for current user.');
   if (!run.success) throw new Error('Only successful runs can be published as apps.');
 
-  const config = deriveConfig(params.type, run.prompt);
+  const config = generateStructuredConfig(params.type, run.prompt);
 
   return prisma.miniApp.create({
     data: {

@@ -18,9 +18,10 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
-  const [appType, setAppType] = useState<'referral' | 'gated-access' | 'tipping'>('referral');
+  const [appType, setAppType] = useState<'referral' | 'gated-access' | 'tipping' | 'launch-campaign' | 'loyalty'>('referral');
   const [appTitle, setAppTitle] = useState('');
   const [appDescription, setAppDescription] = useState('');
+  const [generatedConfig, setGeneratedConfig] = useState<any>(null);
   const [bagsStatus, setBagsStatus] = useState<any>(null);
   const [txScope, setTxScope] = useState<'self' | 'global'>('self');
   const [txHistory, setTxHistory] = useState<any[]>([]);
@@ -32,6 +33,8 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
     setOutputMint(selectedTemplate.defaults.outputMint);
     setAmount(selectedTemplate.defaults.amount);
     setExecuteSwap(selectedTemplate.defaults.executeSwap);
+    if (selectedTemplate.id.includes('launch')) setAppType('launch-campaign' as any);
+    if (selectedTemplate.id.includes('loyalty')) setAppType('loyalty' as any);
     if (selectedTemplate.id.includes('referral')) setAppType('referral');
     if (selectedTemplate.id.includes('gated')) setAppType('gated-access');
     if (selectedTemplate.id.includes('tipping')) setAppType('tipping');
@@ -56,6 +59,21 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
       })
       .catch(() => undefined);
   }, [result?.signature, txScope]);
+
+  const generateConfig = async () => {
+    try {
+      const res = await fetch('/api/apps/generate-config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: appType, prompt }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Config generation failed');
+      setGeneratedConfig(data.config);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Config generation failed');
+    }
+  };
 
   const publishRun = async () => {
     if (!result?.runId) return;
@@ -298,6 +316,8 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 <input value={appTitle} onChange={(e)=>setAppTitle(e.target.value)} placeholder="App title" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
                 <select value={appType} onChange={(e)=>setAppType(e.target.value as any)} className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs">
+                  <option value="launch-campaign">Launch Campaign</option>
+                  <option value="loyalty">Loyalty</option>
                   <option value="referral">Referral</option>
                   <option value="gated-access">Gated Access</option>
                   <option value="tipping">Tipping</option>
@@ -306,11 +326,20 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
               </div>
 
               <div className="flex items-center gap-3 flex-wrap">
+                <button onClick={generateConfig} className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">
+                  Generate Structured Config
+                </button>
                 <button onClick={publishRun} disabled={!result.runId || publishing || result.published} className="px-3 py-2 brutal-border bg-white text-black font-mono text-xs md:text-sm disabled:opacity-50">
                   {result.published ? 'Deployed in App Directory' : publishing ? 'Publishing...' : 'Deploy to Bags App Directory'}
                 </button>
                 <a href="/apps" target="_blank" className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">Open Bags App Directory</a>
               </div>
+
+              {generatedConfig && (
+                <pre className="mt-2 brutal-border bg-[var(--bg)] p-2 overflow-auto text-xs font-mono max-h-[180px]">
+{JSON.stringify(generatedConfig, null, 2)}
+                </pre>
+              )}
             </div>
 
             <pre className="mt-4 brutal-border bg-[var(--bg)] p-3 md:p-4 overflow-auto text-xs md:text-sm font-mono max-h-[340px]">

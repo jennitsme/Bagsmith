@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { UseAppButton } from '@/components/UseAppButton';
+import { FeeShareSetupCard } from '@/components/FeeShareSetupCard';
 
 async function getApp(id: string) {
   const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
@@ -48,6 +49,7 @@ export default async function AppDetailPage({ params }: { params: { id: string }
         </div>
 
         <UseAppButton appId={app.id} />
+        <FeeShareSetupCard appId={app.id} />
       </div>
     </div>
   );

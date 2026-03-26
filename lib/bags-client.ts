@@ -79,3 +79,15 @@ export async function sendSignedTransaction(transaction: string) {
     body: JSON.stringify({ transaction }),
   });
 }
+
+export async function createFeeShareConfig(params: {
+  payer: string;
+  baseMint: string;
+  claimersArray: string[];
+  basisPointsArray: number[];
+}) {
+  return bagsFetch<any>(`/fee-share/config`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}

@@ -41,6 +41,15 @@ model MiniApp {
   updatedAt     DateTime @updatedAt
 }
 
+model MiniAppEvent {
+  id         String   @id @default(cuid())
+  appId      String
+  actorWallet String?
+  actionType String
+  payloadJson String
+  createdAt  DateTime @default(now())
+}
+
 model UserProfile {
   wallet      String   @id
   displayName String

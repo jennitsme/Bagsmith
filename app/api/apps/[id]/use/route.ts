@@ -91,6 +91,38 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }
     }
 
+    if (app.type === 'launch-campaign') {
+      const completed = Number(body?.questCompleted ?? 0);
+      const required = Number(config.questCountRequired ?? 3);
+      action = {
+        type: 'launch-campaign',
+        message: completed >= required ? 'Campaign reward unlocked.' : 'Progress recorded for launch campaign.',
+        completed,
+        required,
+        rewardEligible: completed >= required,
+      };
+    }
+
+    if (app.type === 'loyalty') {
+      const volume = Number(body?.tradeVolume ?? 0);
+      const points = Math.max(0, Math.floor(volume / 100));
+      action = {
+        type: 'loyalty',
+        message: 'Loyalty points updated.',
+        tradeVolume: volume,
+        pointsEarned: points,
+      };
+    }
+
+    await prisma.miniAppEvent.create({
+      data: {
+        appId: app.id,
+        actorWallet: wallet || null,
+        actionType: action.type || 'generic',
+        payloadJson: JSON.stringify({ action, executeOnchain }),
+      },
+    });
+
     return NextResponse.json({ ok: true, appId: app.id, usageCount: app.usageCount, action });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Failed to use app' }, { status: 500 });

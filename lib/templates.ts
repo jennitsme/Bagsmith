@@ -17,6 +17,24 @@ const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
 export const MINI_APP_TEMPLATES: MiniAppTemplate[] = [
   {
+    id: 'launch-campaign',
+    name: 'Launch Campaign Engine',
+    desc: 'Quest-based launch campaign with reward unlock for early adopters.',
+    tags: ['Launch', 'Campaign'],
+    prompt:
+      'Create a launch campaign app where users complete 3 on-chain quests to unlock reward allocation from an airdrop pool.',
+    defaults: { inputMint: SOL_MINT, outputMint: USDC_MINT, amount: '1000000', executeSwap: false },
+  },
+  {
+    id: 'loyalty-engine',
+    name: 'Trader Loyalty Engine',
+    desc: 'Tiered loyalty points and rewards based on trading activity.',
+    tags: ['Loyalty', 'Rewards'],
+    prompt:
+      'Create a loyalty app with tiered rewards and volume-weighted points for repeat traders.',
+    defaults: { inputMint: SOL_MINT, outputMint: USDC_MINT, amount: '1000000', executeSwap: false },
+  },
+  {
     id: 'referral-loop',
     name: 'Viral Referral Loop',
     desc: 'Users invite friends to earn a percentage of trading fees with measurable conversion.',
