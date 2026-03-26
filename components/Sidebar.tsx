@@ -1,12 +1,12 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { Terminal, Zap, BarChart2, Shield, Settings, Wallet, Layers, X, User } from 'lucide-react';
+import { Terminal, Zap, BarChart2, Shield, Settings, Wallet, Layers, Box, X, User } from 'lucide-react';
 
 const navItems = [
   { icon: Terminal, label: 'Builder', id: 'forge' },
   { icon: Layers, label: 'Templates', id: 'templates' },
-  { icon: Layers, label: 'Apps', id: 'apps' },
+  { icon: Box, label: 'Apps', id: 'apps' },
   { icon: BarChart2, label: 'Analytics', id: 'analytics' },
   { icon: Shield, label: 'Security', id: 'security' },
   { icon: User, label: 'Profile', id: 'profile' },
