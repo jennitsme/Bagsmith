@@ -105,3 +105,16 @@ export async function getClaimTransactionsV3(params: Record<string, unknown>) {
     body: JSON.stringify(params),
   });
 }
+
+export async function createTokenLaunchTransaction(params: {
+  ipfs: string;
+  tokenMint: string;
+  wallet: string;
+  initialBuyLamports: number;
+  configKey: string;
+}) {
+  return bagsFetch<any>(`/token-launch/create-launch-transaction`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}

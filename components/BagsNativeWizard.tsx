@@ -18,6 +18,13 @@ export function BagsNativeWizard({ appId }: { appId: string }) {
   const [claimLoading, setClaimLoading] = useState(false);
   const [claimMsg, setClaimMsg] = useState<string | null>(null);
 
+  const [launchIpfs, setLaunchIpfs] = useState('');
+  const [launchTokenMint, setLaunchTokenMint] = useState('');
+  const [launchConfigKey, setLaunchConfigKey] = useState('');
+  const [launchInitialBuyLamports, setLaunchInitialBuyLamports] = useState('1000000');
+  const [launchLoading, setLaunchLoading] = useState(false);
+  const [launchMsg, setLaunchMsg] = useState<string | null>(null);
+
   const refreshVerification = useCallback(async () => {
     const res = await fetch(`/api/apps/${appId}/verify-status`, { cache: 'no-store' });
     const data = await res.json();
@@ -35,13 +42,22 @@ export function BagsNativeWizard({ appId }: { appId: string }) {
       const claimersArray = claimers.split(',').map((s) => s.trim()).filter(Boolean);
       const basisPointsArray = bps.split(',').map((s) => Number(s.trim())).filter((n) => Number.isFinite(n));
 
+      if (!baseMint.trim()) throw new Error('baseMint is required.');
+      if (claimersArray.length === 0) throw new Error('At least one claimer is required.');
+      if (claimersArray.length !== basisPointsArray.length) throw new Error('Claimers count must match BPS count.');
+      const total = basisPointsArray.reduce((a, b) => a + b, 0);
+      if (total !== 10000) throw new Error(`BPS total must be 10000 (current: ${total}).`);
+
       const res = await fetch(`/api/apps/${appId}/fee-sharing/setup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ baseMint, claimersArray, basisPointsArray }),
       });
       const data = await res.json();
-      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Fee-share setup failed');
+      if (!res.ok || !data?.ok) {
+        const detail = data?.error || data?.message || JSON.stringify(data);
+        throw new Error(`Fee-share setup failed: ${detail}`);
+      }
       setFeeMsg('Fee-share setup created successfully.');
       await refreshVerification();
     } catch (e) {
@@ -80,13 +96,51 @@ export function BagsNativeWizard({ appId }: { appId: string }) {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok || !data?.ok) throw new Error(data?.error || 'Claim flow init failed');
+      if (!res.ok || !data?.ok) {
+        const detail = data?.error || data?.message || JSON.stringify(data);
+        throw new Error(`Claim flow init failed: ${detail}`);
+      }
       setClaimMsg('Claim transaction(s) generated.');
       await refreshVerification();
     } catch (e) {
       setClaimMsg(e instanceof Error ? e.message : 'Claim flow init failed');
     } finally {
       setClaimLoading(false);
+    }
+  };
+
+  const createTestLaunchTx = async () => {
+    setLaunchLoading(true);
+    setLaunchMsg(null);
+    try {
+      if (!launchIpfs.trim() || !launchTokenMint.trim() || !launchConfigKey.trim()) {
+        throw new Error('ipfs, tokenMint, and configKey are required for test launch tx.');
+      }
+      const initialBuyLamports = Number(launchInitialBuyLamports);
+      if (!Number.isFinite(initialBuyLamports) || initialBuyLamports <= 0) {
+        throw new Error('initialBuyLamports must be a positive number.');
+      }
+
+      const res = await fetch(`/api/apps/${appId}/launch-test-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ipfs: launchIpfs.trim(),
+          tokenMint: launchTokenMint.trim(),
+          configKey: launchConfigKey.trim(),
+          initialBuyLamports,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.ok) {
+        const detail = data?.error || data?.message || JSON.stringify(data);
+        throw new Error(`Create test launch tx failed: ${detail}`);
+      }
+      setLaunchMsg('Test token launch transaction generated.');
+    } catch (e) {
+      setLaunchMsg(e instanceof Error ? e.message : 'Create test launch tx failed');
+    } finally {
+      setLaunchLoading(false);
     }
   };
 
@@ -113,6 +167,20 @@ export function BagsNativeWizard({ appId }: { appId: string }) {
           <span>3) Claim Fee Flow</span>
           {badge(Boolean(verification?.claimFlowInitialized))}
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="font-mono text-xs text-[var(--text-muted)]">Optional Prep: Create Test Token Launch Tx (for obtaining valid baseMint context)</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <input value={launchIpfs} onChange={(e) => setLaunchIpfs(e.target.value)} placeholder="ipfs metadata URL" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
+          <input value={launchTokenMint} onChange={(e) => setLaunchTokenMint(e.target.value)} placeholder="token mint" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
+          <input value={launchConfigKey} onChange={(e) => setLaunchConfigKey(e.target.value)} placeholder="config key" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
+          <input value={launchInitialBuyLamports} onChange={(e) => setLaunchInitialBuyLamports(e.target.value)} placeholder="initial buy lamports" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
+        </div>
+        <button onClick={createTestLaunchTx} disabled={launchLoading} className="px-3 py-2 brutal-border bg-white text-black font-bold text-xs disabled:opacity-50">
+          {launchLoading ? 'Generating...' : 'Create Test Launch Tx'}
+        </button>
+        {launchMsg && <div className="font-mono text-xs text-[var(--text-muted)] break-all">{launchMsg}</div>}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
