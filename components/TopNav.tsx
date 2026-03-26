@@ -2,14 +2,27 @@
 
 import { Bell, Search, ChevronDown, Menu } from 'lucide-react';
 
-export function TopNav({ toggleSidebar }: { toggleSidebar: () => void }) {
+function shortWallet(wallet: string) {
+  return `${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
+}
+
+export function TopNav({
+  toggleSidebar,
+  wallet,
+  onSignIn,
+  onLogout,
+  authLoading,
+}: {
+  toggleSidebar: () => void;
+  wallet: string | null;
+  onSignIn: () => void;
+  onLogout: () => void;
+  authLoading?: boolean;
+}) {
   return (
     <header className="h-16 brutal-border border-x-0 border-t-0 flex items-center justify-between px-4 md:px-8 bg-[var(--surface)]/50 backdrop-blur-md sticky top-0 z-30">
       <div className="flex items-center gap-2 md:gap-4 w-full md:w-1/3">
-        <button 
-          onClick={toggleSidebar}
-          className="md:hidden p-2 text-[var(--text-muted)] hover:text-white transition-colors"
-        >
+        <button onClick={toggleSidebar} className="md:hidden p-2 text-[var(--text-muted)] hover:text-white transition-colors">
           <Menu className="w-6 h-6" />
         </button>
         <div className="relative w-full max-w-md hidden sm:block">
@@ -34,11 +47,25 @@ export function TopNav({ toggleSidebar }: { toggleSidebar: () => void }) {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--accent)] rounded-full" />
         </button>
 
-        <div className="flex items-center gap-2 md:gap-3 brutal-border px-2 md:px-3 py-1.5 rounded-sm cursor-pointer hover:bg-[var(--surface-hover)] transition-colors">
-          <div className="w-6 h-6 rounded-sm bg-gradient-to-br from-[var(--neon)] to-[var(--accent)]" />
-          <span className="text-sm font-bold hidden sm:inline-block">Creator.eth</span>
-          <ChevronDown className="w-4 h-4 text-[var(--text-muted)] hidden sm:inline-block" />
-        </div>
+        {wallet ? (
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 md:gap-3 brutal-border px-2 md:px-3 py-1.5 rounded-sm cursor-pointer hover:bg-[var(--surface-hover)] transition-colors"
+            title="Click to logout"
+          >
+            <div className="w-6 h-6 rounded-sm bg-gradient-to-br from-[var(--neon)] to-[var(--accent)]" />
+            <span className="text-sm font-bold hidden sm:inline-block">{shortWallet(wallet)}</span>
+            <ChevronDown className="w-4 h-4 text-[var(--text-muted)] hidden sm:inline-block" />
+          </button>
+        ) : (
+          <button
+            onClick={onSignIn}
+            disabled={authLoading}
+            className="brutal-border px-3 py-2 text-xs md:text-sm font-mono bg-white text-black font-bold hover:bg-[var(--neon)] transition-colors disabled:opacity-50"
+          >
+            {authLoading ? 'Connecting...' : 'Connect Wallet'}
+          </button>
+        )}
       </div>
     </header>
   );

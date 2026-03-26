@@ -11,31 +11,32 @@ const navItems = [
   { icon: Settings, label: 'Settings', id: 'settings' },
 ];
 
-export function Sidebar({ 
-  activeTab, 
-  setActiveTab, 
-  isOpen, 
-  closeSidebar 
-}: { 
-  activeTab: string; 
+function shortWallet(wallet: string) {
+  return `${wallet.slice(0, 4)}...${wallet.slice(-4)}`;
+}
+
+export function Sidebar({
+  activeTab,
+  setActiveTab,
+  isOpen,
+  closeSidebar,
+  wallet,
+}: {
+  activeTab: string;
   setActiveTab: (id: string) => void;
   isOpen: boolean;
   closeSidebar: () => void;
+  wallet: string | null;
 }) {
   return (
     <>
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/80 z-40 md:hidden backdrop-blur-sm"
-          onClick={closeSidebar}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 bg-black/80 z-40 md:hidden backdrop-blur-sm" onClick={closeSidebar} />}
 
-      {/* Sidebar */}
-      <div className={`fixed md:static inset-y-0 left-0 w-64 h-screen brutal-border border-y-0 border-l-0 bg-[var(--bg)] flex flex-col justify-between p-4 z-50 transition-transform duration-300 ease-in-out ${
-        isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-      }`}>
+      <div
+        className={`fixed md:static inset-y-0 left-0 w-64 h-screen brutal-border border-y-0 border-l-0 bg-[var(--bg)] flex flex-col justify-between p-4 z-50 transition-transform duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
         <div>
           <div className="flex items-center justify-between mb-12 px-2">
             <div className="flex items-center gap-3">
@@ -76,13 +77,15 @@ export function Sidebar({
           </nav>
         </div>
 
-        <div className="brutal-border p-4 rounded-sm bg-[var(--surface)] relative overflow-hidden group cursor-pointer">
+        <div className="brutal-border p-4 rounded-sm bg-[var(--surface)] relative overflow-hidden group">
           <div className="absolute inset-0 bg-[var(--accent)] translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out" />
           <div className="relative z-10 flex items-center gap-3">
             <Wallet className="w-5 h-5 group-hover:text-white transition-colors" />
             <div className="flex flex-col text-left">
-              <span className="font-mono text-xs text-[var(--text-muted)] group-hover:text-white/70 transition-colors">Connected</span>
-              <span className="font-mono text-sm font-bold truncate w-32">0x7F...3A92</span>
+              <span className="font-mono text-xs text-[var(--text-muted)] group-hover:text-white/70 transition-colors">
+                {wallet ? 'Connected' : 'Not Connected'}
+              </span>
+              <span className="font-mono text-sm font-bold truncate w-32">{wallet ? shortWallet(wallet) : '-'}</span>
             </div>
           </div>
         </div>

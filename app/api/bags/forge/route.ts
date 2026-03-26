@@ -6,6 +6,7 @@ import { getTradeQuote, createSwapTransaction, sendSignedTransaction } from '@/l
 import { getDevWalletKeypair } from '@/lib/dev-wallet';
 import { appendForgeLog } from '@/lib/forge-logs';
 import { attachUserCookie, ensureUserId } from '@/lib/user-session';
+import { getAuthWallet } from '@/lib/auth-wallet';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
@@ -20,8 +21,14 @@ export async function POST(req: NextRequest) {
   const executeSwap = Boolean(body?.executeSwap);
   const mode = executeSwap ? 'execute' : 'quote-only';
   const { userId, shouldSetCookie } = ensureUserId(req);
+  const authenticatedWallet = getAuthWallet(req);
 
   try {
+    if (!authenticatedWallet) {
+      const res = NextResponse.json({ ok: false, error: 'Unauthorized. Connect wallet and sign in first.' }, { status: 401 });
+      if (shouldSetCookie) attachUserCookie(res, userId);
+      return res;
+    }
     if (!isNonEmptyString(prompt)) {
       const res = NextResponse.json({ ok: false, error: 'prompt is required.' }, { status: 400 });
       if (shouldSetCookie) attachUserCookie(res, userId);
