@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 function timeAgo(dateStr: string) {
   const t = new Date(dateStr).getTime();
@@ -18,20 +18,31 @@ export default function TxHistoryPage() {
   const [scope, setScope] = useState<'self' | 'global'>('self');
   const [runs, setRuns] = useState<any[]>([]);
   const [q, setQ] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const limit = 20;
+
+  const load = async (reset = false) => {
+    const currentOffset = reset ? 0 : offset;
+    const res = await fetch(`/api/integrations/bags/tx-history?scope=${scope}&q=${encodeURIComponent(q)}&offset=${currentOffset}&limit=${limit}`, { cache: 'no-store' });
+    const data = await res.json();
+    const list = data?.runs || [];
+
+    if (reset) {
+      setRuns(list);
+      setOffset(list.length);
+    } else {
+      setRuns((prev) => [...prev, ...list]);
+      setOffset((prev) => prev + list.length);
+    }
+    setHasMore(Boolean(data?.hasMore));
+  };
 
   useEffect(() => {
-    fetch(`/api/integrations/bags/tx-history?scope=${scope}`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => setRuns(d?.runs || []));
-  }, [scope]);
-
-  const filtered = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    if (!s) return runs;
-    return runs.filter((tx) =>
-      [tx.signature, tx.inputMint, tx.outputMint, tx.userId, tx.mode].some((v) => String(v || '').toLowerCase().includes(s))
-    );
-  }, [runs, q]);
+    setOffset(0);
+    load(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, q]);
 
   return (
     <div className="min-h-screen p-6 md:p-10 bg-[var(--bg)] text-[var(--text)]">
@@ -45,6 +56,9 @@ export default function TxHistoryPage() {
                   {s}
                 </button>
               ))}
+              <a href={`/api/integrations/bags/tx-history/export?scope=${scope}&q=${encodeURIComponent(q)}`} className="px-3 py-2 brutal-border font-mono text-xs bg-white text-black font-bold">
+                Export CSV
+              </a>
             </div>
           </div>
 
@@ -57,7 +71,7 @@ export default function TxHistoryPage() {
         </div>
 
         <div className="space-y-2">
-          {filtered.map((tx) => (
+          {runs.map((tx) => (
             <div key={tx.id} className="p-3 brutal-border bg-[var(--surface)] font-mono text-xs md:text-sm">
               <div className="flex flex-wrap gap-3 items-center">
                 <span>{tx.mode}</span>
@@ -71,8 +85,14 @@ export default function TxHistoryPage() {
               <a href={`https://solscan.io/tx/${tx.signature}`} target="_blank" rel="noreferrer" className="text-green-400 underline break-all">{tx.signature}</a>
             </div>
           ))}
-          {filtered.length === 0 && <div className="font-mono text-sm text-[var(--text-muted)]">No transactions.</div>}
+          {runs.length === 0 && <div className="font-mono text-sm text-[var(--text-muted)]">No transactions.</div>}
         </div>
+
+        {hasMore && (
+          <button onClick={() => load(false)} className="mt-4 px-4 py-2 brutal-border font-mono text-sm hover:bg-[var(--surface-hover)]">
+            Load more
+          </button>
+        )}
       </div>
     </div>
   );

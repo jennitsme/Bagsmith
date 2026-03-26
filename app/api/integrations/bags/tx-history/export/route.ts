@@ -6,9 +6,14 @@ function normalizeScope(value: string | null): 'self' | 'global' {
   return value === 'global' ? 'global' : 'self';
 }
 
-function toInt(v: string | null, fallback: number) {
-  const n = Number(v);
-  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
+function toCsv(rows: any[]) {
+  const header = ['id', 'userId', 'signature', 'mode', 'success', 'amount', 'inputMint', 'outputMint', 'createdAt'];
+  const esc = (v: unknown) => {
+    const s = String(v ?? '');
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+  return [header.join(','), ...rows.map((r) => header.map((h) => esc(r[h])).join(','))].join('\n');
 }
 
 export async function GET(req: NextRequest) {
@@ -16,9 +21,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const scope = normalizeScope(searchParams.get('scope'));
     const q = (searchParams.get('q') || '').trim().toLowerCase();
-    const offset = toInt(searchParams.get('offset'), 0);
-    const limit = Math.min(100, Math.max(1, toInt(searchParams.get('limit'), 20)));
-
     const { userId } = ensureUserId(req);
 
     const where: any = { signature: { not: null } };
@@ -47,11 +49,16 @@ export async function GET(req: NextRequest) {
         )
       : all;
 
-    const sliced = filtered.slice(offset, offset + limit);
-    const hasMore = offset + limit < filtered.length;
+    const csv = toCsv(filtered.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })));
 
-    return NextResponse.json({ ok: true, scope, total: filtered.length, offset, limit, hasMore, runs: sliced });
+    return new NextResponse(csv, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="bags-tx-history-${scope}.csv"`,
+      },
+    });
   } catch (error) {
-    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Failed to load tx history' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Failed to export tx history' }, { status: 500 });
   }
 }
