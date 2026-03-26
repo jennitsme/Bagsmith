@@ -1,6 +1,9 @@
 import { notFound } from 'next/navigation';
 import { UseAppButton } from '@/components/UseAppButton';
 import { FeeShareSetupCard } from '@/components/FeeShareSetupCard';
+import { PartnerConfigCard } from '@/components/PartnerConfigCard';
+import { ClaimFeesCard } from '@/components/ClaimFeesCard';
+import { VerificationStatusCard } from '@/components/VerificationStatusCard';
 
 async function getApp(id: string) {
   const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
@@ -48,8 +51,17 @@ export default async function AppDetailPage({ params }: { params: { id: string }
           <pre className="font-mono text-xs overflow-auto">{JSON.stringify(config, null, 2)}</pre>
         </div>
 
-        <UseAppButton appId={app.id} />
-        <FeeShareSetupCard appId={app.id} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <UseAppButton appId={app.id} />
+          <VerificationStatusCard appId={app.id} />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FeeShareSetupCard appId={app.id} />
+          <PartnerConfigCard appId={app.id} />
+        </div>
+
+        <ClaimFeesCard appId={app.id} />
       </div>
     </div>
   );

@@ -91,3 +91,17 @@ export async function createFeeShareConfig(params: {
     body: JSON.stringify(params),
   });
 }
+
+export async function createPartnerConfigCreationTx(params: { partnerWallet: string }) {
+  return bagsFetch<any>(`/fee-share/partner-config/creation-tx`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
+export async function getClaimTransactionsV3(params: Record<string, unknown>) {
+  return bagsFetch<any>(`/fee-share/claim-transactions/v3`, {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
