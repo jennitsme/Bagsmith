@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { VersionedTransaction } from '@solana/web3.js';
+import bs58 from 'bs58';
+
 import { prisma } from '@/lib/prisma';
 import { getAuthWallet } from '@/lib/auth-wallet';
+import { createSwapTransaction, getTradeQuote, sendSignedTransaction } from '@/lib/bags-client';
+import { getDevWalletKeypair } from '@/lib/dev-wallet';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const body = await req.json().catch(() => ({}));
+    const executeOnchain = Boolean(body?.executeOnchain);
+
     const app = await prisma.miniApp.update({
       where: { id: params.id },
       data: { usageCount: { increment: 1 } },
@@ -47,6 +55,40 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         protocolFeeBps: config.protocolFeeBps ?? 0,
         minimumTip: config.minimumTip ?? '0',
       };
+
+      if (executeOnchain) {
+        const sourceRun = await prisma.forgeRun.findUnique({ where: { id: app.sourceRunId } });
+        if (!sourceRun) throw new Error('Source run not found for this app.');
+
+        const signer = getDevWalletKeypair();
+        const quote = await getTradeQuote({
+          inputMint: sourceRun.inputMint,
+          outputMint: sourceRun.outputMint,
+          amount: sourceRun.amount,
+          slippageMode: 'auto',
+        });
+
+        const quoteResponse = (quote as any)?.response ?? quote;
+        const swapTxPayload = await createSwapTransaction({
+          quoteResponse,
+          userPublicKey: signer.publicKey.toBase58(),
+        });
+
+        const swapTx = (swapTxPayload as any)?.response?.swapTransaction;
+        if (!swapTx || typeof swapTx !== 'string') {
+          throw new Error('Invalid swap transaction from Bags API.');
+        }
+
+        const tx = VersionedTransaction.deserialize(bs58.decode(swapTx));
+        tx.sign([signer]);
+        const sent = await sendSignedTransaction(bs58.encode(tx.serialize()));
+
+        action.onchain = {
+          executed: true,
+          signature: (sent as any)?.response || null,
+          message: 'Tipping on-chain transaction executed via Bags pipeline.',
+        };
+      }
     }
 
     return NextResponse.json({ ok: true, appId: app.id, usageCount: app.usageCount, action });
