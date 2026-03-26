@@ -8,6 +8,7 @@ import { TopNav } from '@/components/TopNav';
 import { ForgeArea } from '@/components/ForgeArea';
 import { AnalyticsOverview } from '@/components/AnalyticsOverview';
 import { TemplatesArea } from '@/components/TemplatesArea';
+import { AppsArea } from '@/components/AppsArea';
 import { SecurityArea } from '@/components/SecurityArea';
 import { SettingsArea } from '@/components/SettingsArea';
 import { ProfileArea } from '@/components/ProfileArea';
@@ -139,6 +140,7 @@ export default function Home() {
               }}
             />
           )}
+          {activeTab === 'apps' && <AppsArea />}
           {activeTab === 'analytics' && <AnalyticsOverview />}
           {activeTab === 'security' && <SecurityArea />}
           {activeTab === 'profile' && (

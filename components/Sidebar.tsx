@@ -6,6 +6,7 @@ import { Terminal, Zap, BarChart2, Shield, Settings, Wallet, Layers, X } from 'l
 const navItems = [
   { icon: Terminal, label: 'Builder', id: 'forge' },
   { icon: Layers, label: 'Templates', id: 'templates' },
+  { icon: AppWindow, label: 'Apps', id: 'apps' },
   { icon: BarChart2, label: 'Analytics', id: 'analytics' },
   { icon: Shield, label: 'Security', id: 'security' },
   { icon: Settings, label: 'Profile', id: 'profile' },
