@@ -21,6 +21,9 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
   const [appType, setAppType] = useState<'referral' | 'gated-access' | 'tipping'>('referral');
   const [appTitle, setAppTitle] = useState('');
   const [appDescription, setAppDescription] = useState('');
+  const [bagsStatus, setBagsStatus] = useState<any>(null);
+  const [txScope, setTxScope] = useState<'self' | 'global'>('self');
+  const [txHistory, setTxHistory] = useState<any[]>([]);
 
   useEffect(() => {
     if (!selectedTemplate) return;
@@ -46,13 +49,13 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
       })
       .catch(() => undefined);
 
-    fetch('/api/integrations/bags/tx-history', { cache: 'no-store' })
+    fetch(`/api/integrations/bags/tx-history?scope=${txScope}`, { cache: 'no-store' })
       .then((r) => r.json())
       .then((d) => {
         if (d?.ok) setTxHistory(d.runs || []);
       })
       .catch(() => undefined);
-  }, [result?.signature]);
+  }, [result?.signature, txScope]);
 
   const publishRun = async () => {
     if (!result?.runId) return;
@@ -224,7 +227,21 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
           </div>
 
           <div className="mt-4">
-            <h4 className="font-bold uppercase text-sm mb-2">Recent Bags Transactions</h4>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-bold uppercase text-sm">Recent Bags Transactions</h4>
+              <div className="flex gap-2">
+                {(['self', 'global'] as const).map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setTxScope(s)}
+                    className={`px-2 py-1 brutal-border font-mono text-[10px] ${txScope === s ? 'bg-[var(--neon)] text-black font-bold' : 'bg-[var(--bg)]'}`}
+                  >
+                    {s}
+                  </button>
+                ))}
+                <a href="/tx-history" target="_blank" className="px-2 py-1 brutal-border font-mono text-[10px] hover:bg-[var(--surface-hover)]">View all</a>
+              </div>
+            </div>
             <div className="space-y-2">
               {txHistory.map((tx) => (
                 <div key={tx.id} className="p-2 brutal-border bg-[var(--bg)] font-mono text-xs flex flex-col gap-1">
