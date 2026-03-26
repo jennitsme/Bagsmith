@@ -24,3 +24,4 @@ pnpm-debug.log*
 /data/*.json
 /public/uploads/avatars/*
 /dev.db
+/prisma/dev.db

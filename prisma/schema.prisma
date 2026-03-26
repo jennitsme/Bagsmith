@@ -8,34 +8,51 @@ datasource db {
 }
 
 model ForgeRun {
-  id         String   @id @default(cuid())
-  userId     String
-  wallet     String?
-  prompt     String
-  inputMint  String
-  outputMint String
-  amount     String
-  mode       String
-  success    Boolean
-  signature  String?
-  error      String?
-  isPublic   Boolean  @default(false)
+  id          String   @id @default(cuid())
+  userId      String
+  wallet      String?
+  prompt      String
+  inputMint   String
+  outputMint  String
+  amount      String
+  mode        String
+  success     Boolean
+  signature   String?
+  error       String?
+  isPublic    Boolean  @default(false)
   publicTitle String?
-  createdAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+}
+
+model MiniApp {
+  id            String   @id @default(cuid())
+  ownerUserId   String
+  ownerWallet   String
+  sourceRunId   String
+  title         String
+  type          String
+  description   String
+  configJson    String
+  txProof       String?
+  feeShareBps   Int      @default(0)
+  status        String   @default("active")
+  usageCount    Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model UserProfile {
-  wallet     String   @id
+  wallet      String   @id
   displayName String
-  bio        String
-  avatarUrl  String
-  updatedAt  DateTime @updatedAt
+  bio         String
+  avatarUrl   String
+  updatedAt   DateTime @updatedAt
 }
 
 model UserSetting {
-  wallet               String @id
-  deploymentAlerts     Boolean @default(true)
-  weeklyAnalytics      Boolean @default(false)
-  securityWarnings     Boolean @default(true)
-  updatedAt            DateTime @updatedAt
+  wallet           String   @id
+  deploymentAlerts Boolean  @default(true)
+  weeklyAnalytics  Boolean  @default(false)
+  securityWarnings Boolean  @default(true)
+  updatedAt        DateTime @updatedAt
 }

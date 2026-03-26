@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getPublicRuns } from '@/lib/forge-logs';
+import { listPublicMiniApps } from '@/lib/mini-apps';
 
 export async function GET() {
-  const runs = await getPublicRuns(50);
-  return NextResponse.json({ ok: true, runs });
+  const apps = await listPublicMiniApps();
+  return NextResponse.json({ ok: true, apps });
 }

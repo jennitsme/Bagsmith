@@ -18,6 +18,9 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [appType, setAppType] = useState<'referral' | 'gated-access' | 'tipping'>('referral');
+  const [appTitle, setAppTitle] = useState('');
+  const [appDescription, setAppDescription] = useState('');
 
   useEffect(() => {
     if (!selectedTemplate) return;
@@ -26,6 +29,11 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
     setOutputMint(selectedTemplate.defaults.outputMint);
     setAmount(selectedTemplate.defaults.amount);
     setExecuteSwap(selectedTemplate.defaults.executeSwap);
+    if (selectedTemplate.id.includes('referral')) setAppType('referral');
+    if (selectedTemplate.id.includes('gated')) setAppType('gated-access');
+    if (selectedTemplate.id.includes('tipping')) setAppType('tipping');
+    setAppTitle(selectedTemplate.name);
+    setAppDescription(selectedTemplate.desc);
     setError(null);
     setResult(null);
   }, [selectedTemplate]);
@@ -34,11 +42,11 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
     if (!result?.runId) return;
     setPublishing(true);
     try {
-      const title = prompt.slice(0, 60);
+      const title = (appTitle || prompt).slice(0, 60);
       const res = await fetch('/api/apps/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ runId: result.runId, title }),
+        body: JSON.stringify({ runId: result.runId, title, type: appType, description: appDescription || prompt }),
       });
       const data = await res.json();
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'Publish failed');
@@ -193,11 +201,23 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
               {result.runId && <div className="break-all">runId: <span className="text-[var(--neon)]">{result.runId}</span></div>}
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap">
-              <button onClick={publishRun} disabled={!result.runId || publishing || result.published} className="px-3 py-2 brutal-border bg-white text-black font-mono text-xs md:text-sm disabled:opacity-50">
-                {result.published ? 'Published' : publishing ? 'Publishing...' : 'Publish as Public App'}
-              </button>
-              <a href="/apps" target="_blank" className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">Open Public Apps</a>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <input value={appTitle} onChange={(e)=>setAppTitle(e.target.value)} placeholder="App title" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
+                <select value={appType} onChange={(e)=>setAppType(e.target.value as any)} className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs">
+                  <option value="referral">Referral</option>
+                  <option value="gated-access">Gated Access</option>
+                  <option value="tipping">Tipping</option>
+                </select>
+                <input value={appDescription} onChange={(e)=>setAppDescription(e.target.value)} placeholder="Short app description" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
+              </div>
+
+              <div className="flex items-center gap-3 flex-wrap">
+                <button onClick={publishRun} disabled={!result.runId || publishing || result.published} className="px-3 py-2 brutal-border bg-white text-black font-mono text-xs md:text-sm disabled:opacity-50">
+                  {result.published ? 'Published' : publishing ? 'Publishing...' : 'Publish as Public App'}
+                </button>
+                <a href="/apps" target="_blank" className="px-3 py-2 brutal-border font-mono text-xs md:text-sm hover:bg-[var(--surface-hover)]">Open Public Apps</a>
+              </div>
             </div>
 
             <pre className="mt-4 brutal-border bg-[var(--bg)] p-3 md:p-4 overflow-auto text-xs md:text-sm font-mono max-h-[340px]">
