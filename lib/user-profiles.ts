@@ -13,12 +13,11 @@ function shortWallet(wallet: string) {
 }
 
 export async function getOrCreateProfile(wallet: string): Promise<UserProfile> {
-  let profile = await prisma.userProfile.findUnique({ where: { wallet } });
-  if (!profile) {
-    profile = await prisma.userProfile.create({
-      data: { wallet, displayName: shortWallet(wallet), bio: '', avatarUrl: '' },
-    });
-  }
+  const profile = await prisma.userProfile.upsert({
+    where: { wallet },
+    update: {},
+    create: { wallet, displayName: shortWallet(wallet), bio: '', avatarUrl: '' },
+  });
   return { ...profile, updatedAt: profile.updatedAt.toISOString() };
 }
 
@@ -36,11 +35,11 @@ export async function updateProfile(wallet: string, patch: Partial<Pick<UserProf
 }
 
 export async function getOrCreateSettings(wallet: string) {
-  let s = await prisma.userSetting.findUnique({ where: { wallet } });
-  if (!s) {
-    s = await prisma.userSetting.create({ data: { wallet } });
-  }
-  return s;
+  return prisma.userSetting.upsert({
+    where: { wallet },
+    update: {},
+    create: { wallet },
+  });
 }
 
 export async function updateSettings(
