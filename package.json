@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "clean": "next clean",
+    "health:check": "node scripts/health-check.mjs", 
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
     "worker": "node scripts/job-worker.mjs"

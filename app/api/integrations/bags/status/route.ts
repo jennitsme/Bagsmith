@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { checkBagsApiHealth } from '@/lib/bags-client';
+import { validateRuntimeEnv } from '@/lib/env';
 
 export async function GET() {
   const baseUrl = process.env.BAGS_API_BASE_URL || 'https://public-api-v2.bags.fm/api/v1';
@@ -35,6 +36,8 @@ export async function GET() {
     health = { ok: false, error: 'Missing BAGS_API_KEY' };
   }
 
+  const env = validateRuntimeEnv();
+
   return NextResponse.json({
     ok: true,
     status: {
@@ -45,6 +48,7 @@ export async function GET() {
       lastTxSignature,
       lastTxAt,
       dbError,
+      env,
     },
   });
 }
