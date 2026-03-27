@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
 import { Bell, Search, ChevronDown, Menu, BadgeCheck } from 'lucide-react';
 
 function shortWallet(wallet: string) {
@@ -33,32 +32,6 @@ export function TopNav({
   onLogout: () => void;
   authLoading?: boolean;
 }) {
-  const [bagsLive, setBagsLive] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadStatus = async () => {
-      try {
-        const res = await fetch('/api/integrations/bags/status', { cache: 'no-store' });
-        const data = await res.json().catch(() => null);
-        if (cancelled) return;
-        setBagsLive(Boolean(data?.ok && data?.status?.apiConnected));
-      } catch {
-        if (!cancelled) setBagsLive(false);
-      }
-    };
-
-    loadStatus();
-    const timer = setInterval(loadStatus, 30000);
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, []);
-
-  const liveLabel = bagsLive === null ? 'Checking' : bagsLive ? 'Live' : 'Degraded';
-
   return (
     <header className="h-16 brutal-border border-x-0 border-t-0 flex items-center justify-between px-4 md:px-8 bg-[var(--surface)]/50 backdrop-blur-md sticky top-0 z-30">
       <div className="flex items-center gap-2 md:gap-4 w-full md:w-1/3">
@@ -76,16 +49,6 @@ export function TopNav({
       </div>
 
       <div className="flex items-center gap-4 md:gap-6">
-        <div className="flex items-center gap-2 px-2 md:px-3 py-1.5 brutal-border rounded-full bg-[var(--bg)]">
-          <div className={`w-2 h-2 rounded-full ${bagsLive ? 'bg-[var(--neon)] animate-pulse' : bagsLive === null ? 'bg-yellow-400' : 'bg-red-400'}`} />
-          <span className={`text-[10px] md:text-xs font-mono uppercase tracking-wider hidden sm:inline-block ${bagsLive ? 'text-[var(--neon)]' : bagsLive === null ? 'text-yellow-400' : 'text-red-400'}`}>
-            Bags Network: {liveLabel}
-          </span>
-          <span className={`text-[10px] md:text-xs font-mono uppercase tracking-wider sm:hidden ${bagsLive ? 'text-[var(--neon)]' : bagsLive === null ? 'text-yellow-400' : 'text-red-400'}`}>
-            {liveLabel}
-          </span>
-        </div>
-
         <button className="relative p-2 text-[var(--text-muted)] hover:text-white transition-colors">
           <Bell className="w-5 h-5" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[var(--accent)] rounded-full" />

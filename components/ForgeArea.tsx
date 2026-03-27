@@ -30,9 +30,6 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
   const [feeSharingLoading, setFeeSharingLoading] = useState(false);
   const [feeSharingMsg, setFeeSharingMsg] = useState<string | null>(null);
   const [bagsStatus, setBagsStatus] = useState<any>(null);
-  const [securityOverview, setSecurityOverview] = useState<any>(null);
-  const [txScope, setTxScope] = useState<'self' | 'global'>('self');
-  const [txHistory, setTxHistory] = useState<any[]>([]);
 
   useEffect(() => {
     if (!selectedTemplate) return;
@@ -60,21 +57,7 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
         if (d?.ok) setBagsStatus(d.status);
       })
       .catch(() => undefined);
-
-    fetch(`/api/integrations/bags/tx-history?scope=${txScope}`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.ok) setTxHistory(d.runs || []);
-      })
-      .catch(() => undefined);
-
-    fetch('/api/security/overview', { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d?.ok) setSecurityOverview(d);
-      })
-      .catch(() => undefined);
-  }, [result?.signature, txScope]);
+  }, [result?.signature]);
 
   const generateConfig = async () => {
     try {
@@ -216,49 +199,13 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
             Execute real swap (create + sign + send transaction)
           </label>
 
-          {executeSwap && hasEnvIssues && (
-            <div className="mt-2 text-red-400 font-mono text-xs">Execute disabled: {bagsStatus.env.issues.join(' | ')}</div>
-          )}
+          {executeSwap && hasEnvIssues && <div className="mt-2 text-red-400 font-mono text-xs">Execute sementara tidak tersedia.</div>}
 
           <div className="mt-4 flex items-center gap-3 flex-wrap">
             <button onClick={runForge} disabled={isRunning || (executeSwap && hasEnvIssues)} className="bg-[var(--neon)] text-black px-4 py-2 font-bold uppercase tracking-wider brutal-border disabled:opacity-50 flex items-center gap-2">
               {isRunning ? 'Running...' : 'Run Forge Pipeline'} <ArrowRight className="w-4 h-4" />
             </button>
             <p className="font-mono text-xs text-[var(--text-muted)]">No fake progress bar. Status reflects actual backend operations.</p>
-          </div>
-        </div>
-
-        <div className="brutal-border bg-[var(--surface)] p-4 md:p-6 rounded-sm">
-          <h3 className="text-lg md:text-xl font-bold uppercase mb-3">Bags Integration Status</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs md:text-sm">
-            <div className="p-3 brutal-border bg-[var(--bg)]">API: <span className={bagsStatus?.apiConnected ? 'text-[var(--neon)]' : 'text-red-400'}>{bagsStatus?.apiConnected ? 'Connected (x-api-key)' : 'Not Connected'}</span></div>
-            <div className="p-3 brutal-border bg-[var(--bg)]">Network: <span className="text-[var(--neon)]">{bagsStatus?.network || 'Bags Public API v2 (Solana)'}</span></div>
-            <div className="p-3 brutal-border bg-[var(--bg)] break-all">Base URL: <span className="text-[var(--neon)]">{bagsStatus?.baseUrl || '-'}</span></div>
-            <div className="p-3 brutal-border bg-[var(--bg)]">Last Tx: {bagsStatus?.lastTxSignature ? <a href={`https://solscan.io/tx/${bagsStatus.lastTxSignature}`} target="_blank" rel="noreferrer" className="text-green-400 underline break-all">{bagsStatus.lastTxSignature}</a> : <span className="text-[var(--text-muted)]">No tx yet</span>}</div>
-            <div className="p-3 brutal-border bg-[var(--bg)]">Ops Warnings: <span className={securityOverview?.summary?.warning > 0 ? 'text-red-400' : 'text-[var(--neon)]'}>{securityOverview?.summary?.warning ?? '-'}</span></div>
-            <div className="p-3 brutal-border bg-[var(--bg)] break-all">Env Issues: <span className={hasEnvIssues ? 'text-red-400' : 'text-[var(--neon)]'}>{hasEnvIssues ? bagsStatus.env.issues.join(' | ') : 'none'}</span></div>
-          </div>
-
-          <div className="mt-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="font-bold uppercase text-sm">Recent Bags Transactions</h4>
-              <div className="flex gap-2">
-                {(['self', 'global'] as const).map((s) => (
-                  <button key={s} onClick={() => setTxScope(s)} className={`px-2 py-1 brutal-border font-mono text-[10px] ${txScope === s ? 'bg-[var(--neon)] text-black font-bold' : 'bg-[var(--bg)]'}`}>{s}</button>
-                ))}
-                <a href="/tx-history" target="_blank" className="px-2 py-1 brutal-border font-mono text-[10px] hover:bg-[var(--surface-hover)]">View all</a>
-              </div>
-            </div>
-            <div className="space-y-2">
-              {txHistory.map((tx) => (
-                <div key={tx.id} className="p-2 brutal-border bg-[var(--bg)] font-mono text-xs flex flex-col gap-1">
-                  <div>{tx.mode} · {tx.success ? 'success' : 'failed'} · amount: {tx.amount}</div>
-                  <div className="break-all text-[var(--text-muted)]">{tx.inputMint} → {tx.outputMint}</div>
-                  {tx.signature && <a href={`https://solscan.io/tx/${tx.signature}`} target="_blank" rel="noreferrer" className="text-green-400 underline break-all">{tx.signature}</a>}
-                </div>
-              ))}
-              {txHistory.length === 0 && <div className="font-mono text-xs text-[var(--text-muted)]">No recent tx history.</div>}
-            </div>
           </div>
         </div>
 
