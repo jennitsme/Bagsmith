@@ -1,67 +1,79 @@
 # Bagsmith
 
-Bagsmith is an AI-powered app factory for Bags that helps users turn prompts into crypto mini-apps.
+Bagsmith is a Bags-native mini-app builder prototype: **prompt → config → quote/swap execution → publish app → analytics proof**.
 
-## What it does
+## Current MVP Scope (Frozen)
+The MVP is intentionally focused on 3 high-conversion templates:
+- Referral
+- Tipping
+- Launch Campaign
 
-- Generate mini-app logic from a plain-language prompt
-- Simulate deployment flow for smart contracts and fee-sharing setup
-- Provide a clean dashboard-style UI for forging app ideas quickly
+## What is implemented (real)
+- Next.js App Router dashboard (Forge, Templates, Apps, Analytics, Profile/Settings)
+- Wallet-based auth session (Phantom sign message + nonce verification)
+- Real Bags API integration:
+  - `GET /trade/quote`
+  - `POST /trade/swap`
+  - `POST /solana/send-transaction`
+  - fee-share / claim / partner-config / token-launch helper endpoints
+- Server-side signing prototype flow (dev wallet) with signer policy guardrails
+- Postgres persistence (Prisma models for forge runs, apps, app events, profile/settings)
+- Redis-backed rate limiting + idempotency (in-memory fallback)
+- BullMQ worker for async verification refresh jobs
+- Analytics summary + tx history + CSV exports
 
-## Tech Stack
-
-- Next.js (App Router)
-- React + TypeScript
-- Tailwind CSS
-- Motion + Lucide icons
+## What is NOT implemented yet
+- Smart-contract factory/module deployment pipeline on-chain
+- Contract verification + ownership proof system
+- Full production custody model (current is prototype dev-wallet signing)
+- Production-grade ranking/compliance engine
 
 ## Getting Started
 
 ### 1) Install dependencies
-
 ```bash
 npm install
 ```
 
-### 2) Start Postgres + Redis (Docker)
-
+### 2) Start Postgres + Redis
 ```bash
 docker compose up -d
 ```
 
-### 3) Run worker (separate terminal)
+### 3) Configure env
+Copy `.env.example` and set values in `.env.local`:
+```env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/bagsmith?schema=public"
+REDIS_URL="redis://localhost:6379"
+BAGS_API_KEY="..."
+BAGS_API_BASE_URL="https://public-api-v2.bags.fm/api/v1"
+BAGS_DEV_WALLET_SECRET="..." # base58-encoded 64-byte secret key
+```
 
+### 4) Run worker (separate terminal)
 ```bash
 npm run worker
 ```
 
-### 4) Run in development
-
+### 5) Run app
 ```bash
 npm run dev
 ```
+Open `http://localhost:3000`
 
-Open: `http://localhost:3000`
-
-### 5) Build for production
-
+### 6) Build production bundle
 ```bash
 npm run build
 npm run start
 ```
 
 ## Scripts
-
-- `npm run dev` — start dev server
-- `npm run build` — build production bundle
+- `npm run dev` — start dev server (includes `prisma generate` + `prisma db push`)
+- `npm run build` — production build
 - `npm run start` — run production server
-- `npm run lint` — run ESLint
+- `npm run lint` — ESLint
+- `npm run worker` — BullMQ worker
 
-## Project Goal
-
-Bagsmith is designed to make Web3 product creation faster by combining AI-assisted generation, deployment workflows, and monetization primitives around the Bags ecosystem.
-
-## Hackathon Submission Assets
-
-- `SUBMISSION.md` — complete submission pack (architecture, proof checklist, demo script)
-- `HACKATHON_FORM_ANSWERS.md` — draft copy-paste answers for application form
+## Submission Assets
+- `SUBMISSION.md` — hackathon submission pack aligned with current implementation
+- `about.md` — short project overview

@@ -5,15 +5,16 @@ import { getAuthWallet } from '@/lib/auth-wallet';
 import { prisma } from '@/lib/prisma';
 import { assertAppOwnership } from '@/lib/app-authz';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await ctx.params;
     const wallet = getAuthWallet(req);
     if (!wallet) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
     const baseMint = String(body?.baseMint || '').trim();
-    const claimersArray = Array.isArray(body?.claimersArray) ? body.claimersArray.map(String) : [];
-    const basisPointsArray = Array.isArray(body?.basisPointsArray) ? body.basisPointsArray.map(Number) : [];
+    const claimersArray: string[] = Array.isArray(body?.claimersArray) ? body.claimersArray.map(String) : [];
+    const basisPointsArray: number[] = Array.isArray(body?.basisPointsArray) ? body.basisPointsArray.map(Number) : [];
 
     if (!baseMint || claimersArray.length === 0 || basisPointsArray.length === 0) {
       return NextResponse.json({ ok: false, error: 'baseMint, claimersArray, basisPointsArray are required.' }, { status: 400 });
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     let app;
     try {
-      app = await assertAppOwnership(params.id, wallet);
+      app = await assertAppOwnership(id, wallet);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unauthorized';
       if (msg === 'App not found') return NextResponse.json({ ok: false, error: 'App not found.' }, { status: 404 });
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     });
 
     await prisma.miniApp.update({
-      where: { id: params.id },
+      where: { id },
       data: { status: 'fee-share-configured' },
     });
 

@@ -39,10 +39,8 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
     setOutputMint(selectedTemplate.defaults.outputMint);
     setAmount(selectedTemplate.defaults.amount);
     setExecuteSwap(selectedTemplate.defaults.executeSwap);
-    if (selectedTemplate.id.includes('launch')) setAppType('launch-campaign' as any);
-    if (selectedTemplate.id.includes('loyalty')) setAppType('loyalty' as any);
+    if (selectedTemplate.id.includes('launch')) setAppType('launch-campaign');
     if (selectedTemplate.id.includes('referral')) setAppType('referral');
-    if (selectedTemplate.id.includes('gated')) setAppType('gated-access');
     if (selectedTemplate.id.includes('tipping')) setAppType('tipping');
     setAppTitle(selectedTemplate.name);
     setAppDescription(selectedTemplate.desc);
@@ -358,9 +356,7 @@ Bags-native builder pipeline: prompt → app config → deploy transaction on Ba
                 <input value={appTitle} onChange={(e)=>setAppTitle(e.target.value)} placeholder="App title" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />
                 <select value={appType} onChange={(e)=>setAppType(e.target.value as any)} className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs">
                   <option value="launch-campaign">Launch Campaign</option>
-                  <option value="loyalty">Loyalty</option>
                   <option value="referral">Referral</option>
-                  <option value="gated-access">Gated Access</option>
                   <option value="tipping">Tipping</option>
                 </select>
                 <input value={appDescription} onChange={(e)=>setAppDescription(e.target.value)} placeholder="Short app description" className="bg-[var(--bg)] brutal-border px-3 py-2 font-mono text-xs" />

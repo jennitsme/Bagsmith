@@ -10,13 +10,14 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { buildIdempotencyKey, claimIdempotencyKey } from '@/lib/idempotency';
 import { assertSignerPolicy } from '@/lib/signer-policy';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await ctx.params;
     const body = await req.json().catch(() => ({}));
     const executeOnchain = Boolean(body?.executeOnchain);
 
     const app = await prisma.miniApp.update({
-      where: { id: params.id },
+      where: { id },
       data: { usageCount: { increment: 1 } },
     });
 

@@ -4,14 +4,15 @@ import { prisma } from '@/lib/prisma';
 import { getClaimTransactionsV3 } from '@/lib/bags-client';
 import { assertAppOwnership } from '@/lib/app-authz';
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await ctx.params;
     const wallet = getAuthWallet(req);
     if (!wallet) return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
 
     let app;
     try {
-      app = await assertAppOwnership(params.id, wallet);
+      app = await assertAppOwnership(id, wallet);
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unauthorized';
       if (msg === 'App not found') return NextResponse.json({ ok: false, error: 'App not found' }, { status: 404 });

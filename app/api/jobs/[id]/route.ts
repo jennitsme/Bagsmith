@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { appQueue } from '@/lib/jobs';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
-    const id = params.id;
+    const { id } = await ctx.params;
     const job = await appQueue.getJob(id);
     if (!job) return NextResponse.json({ ok: false, error: 'Job not found' }, { status: 404 });
 

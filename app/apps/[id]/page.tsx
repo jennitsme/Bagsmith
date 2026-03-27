@@ -10,8 +10,9 @@ async function getApp(id: string) {
   return data?.app || null;
 }
 
-export default async function AppDetailPage({ params }: { params: { id: string } }) {
-  const app = await getApp(params.id);
+export default async function AppDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const app = await getApp(id);
   if (!app) return notFound();
 
   const config = (() => {
