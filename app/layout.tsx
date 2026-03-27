@@ -13,8 +13,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Bagsmith | AI App Factory for Bags',
-  description: 'Create crypto mini-apps via prompts, auto-deploy, and monetize via fee-sharing.',
+  title: 'Bagsmith | Prompt-to-Execution Mini-App Builder',
+  description: 'Build referral, tipping, and launch-campaign mini-app flows with real Bags execution and analytics proof.',
 };
 
 export default function RootLayout({children}: {children: React.ReactNode}) {

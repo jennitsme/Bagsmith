@@ -6,11 +6,12 @@ import { ArrowRight } from 'lucide-react';
 import type { MiniAppTemplate } from '@/lib/templates';
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
+const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
 export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemplate | null }) {
   const [prompt, setPrompt] = useState('');
   const [inputMint, setInputMint] = useState(SOL_MINT);
-  const [outputMint, setOutputMint] = useState('');
+  const [outputMint, setOutputMint] = useState(USDC_MINT);
   const [amount, setAmount] = useState('1000000');
   const [executeSwap, setExecuteSwap] = useState(false);
 
