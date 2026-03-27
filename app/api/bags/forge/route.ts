@@ -11,6 +11,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { buildIdempotencyKey, claimIdempotencyKey } from '@/lib/idempotency';
 import { forgeRequestSchema, zodErrorMessage } from '@/lib/validation';
 import { assertSignerPolicy } from '@/lib/signer-policy';
+import { canExecuteOnchain } from '@/lib/env';
 
 function isNonEmptyString(v: unknown): v is string {
   return typeof v === 'string' && v.trim().length > 0;
@@ -57,6 +58,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (executeSwap) {
+      const exec = canExecuteOnchain();
+      if (!exec.ok) {
+        const res = NextResponse.json({ ok: false, error: `Execute disabled: ${exec.issues.join('; ')}` }, { status: 503 });
+        if (shouldSetCookie) attachUserCookie(res, userId);
+        return res;
+      }
       assertSignerPolicy({ inputMint: inputMint.trim(), outputMint: outputMint.trim(), amount: amount.trim() });
     }
 

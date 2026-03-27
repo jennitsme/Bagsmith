@@ -8,6 +8,13 @@ function isLikelyBagsKey(value: string) {
   return /^bags_(prod|dev|test)_/.test(value.trim());
 }
 
+export function canExecuteOnchain() {
+  const issues: string[] = [];
+  if (!(process.env.BAGS_API_KEY || '').trim()) issues.push('Missing BAGS_API_KEY');
+  if (!(process.env.BAGS_DEV_WALLET_SECRET || '').trim()) issues.push('Missing BAGS_DEV_WALLET_SECRET');
+  return { ok: issues.length === 0, issues };
+}
+
 export function validateRuntimeEnv(): EnvCheckResult {
   const issues: string[] = [];
   const warnings: string[] = [];

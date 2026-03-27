@@ -104,6 +104,12 @@ export function AnalyticsOverview() {
             >
               <Download className="w-4 h-4" /> Export CSV
             </a>
+            <a
+              href={`/api/analytics/proof-bundle?range=${range}&scope=${scope}`}
+              className="px-4 py-2 text-xs md:text-sm font-mono brutal-border bg-[var(--neon)] text-black font-bold hover:bg-white transition-colors flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Proof Bundle (JSON)
+            </a>
           </div>
         </div>
 

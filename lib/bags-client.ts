@@ -18,6 +18,10 @@ type BagsApiResponse<T = unknown> = {
   [key: string]: unknown;
 };
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function bagsFetch<T = unknown>(path: string, init?: RequestInit): Promise<BagsApiResponse<T>> {
   const apiKey = process.env.BAGS_API_KEY;
   if (!apiKey) {
@@ -25,29 +29,55 @@ async function bagsFetch<T = unknown>(path: string, init?: RequestInit): Promise
   }
 
   const baseUrl = process.env.BAGS_API_BASE_URL || DEFAULT_BASE_URL;
+  const retries = 2;
 
-  const response = await fetch(`${baseUrl}${path}`, {
-    ...init,
-    headers: {
-      'x-api-key': apiKey,
-      'Content-Type': 'application/json',
-      ...(init?.headers || {}),
-    },
-    cache: 'no-store',
-  });
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
 
-  const data = (await response.json().catch(() => null)) as BagsApiResponse<T> | null;
+    try {
+      const response = await fetch(`${baseUrl}${path}`, {
+        ...init,
+        headers: {
+          'x-api-key': apiKey,
+          'Content-Type': 'application/json',
+          ...(init?.headers || {}),
+        },
+        cache: 'no-store',
+        signal: controller.signal,
+      });
 
-  if (!response.ok) {
-    const errorMessage = data?.message || data?.error || `Bags API error (${response.status})`;
-    throw new Error(errorMessage);
+      const data = (await response.json().catch(() => null)) as BagsApiResponse<T> | null;
+
+      if (!response.ok) {
+        const errorMessage = data?.message || data?.error || `Bags API error (${response.status})`;
+        const retriable = response.status >= 500 || response.status === 429;
+        if (retriable && attempt < retries) {
+          await sleep(300 * (attempt + 1));
+          continue;
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (!data) {
+        throw new Error('Empty response from Bags API');
+      }
+
+      return data;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Bags request failed';
+      const retriable = msg.includes('aborted') || msg.includes('fetch failed');
+      if (retriable && attempt < retries) {
+        await sleep(300 * (attempt + 1));
+        continue;
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
-  if (!data) {
-    throw new Error('Empty response from Bags API');
-  }
-
-  return data;
+  throw new Error('Bags request failed after retries');
 }
 
 export async function getTradeQuote(params: TradeQuoteParams) {

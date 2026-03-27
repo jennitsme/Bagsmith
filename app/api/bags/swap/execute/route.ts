@@ -9,6 +9,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { buildIdempotencyKey, claimIdempotencyKey } from '@/lib/idempotency';
 import { swapExecuteRequestSchema, zodErrorMessage } from '@/lib/validation';
 import { assertSignerPolicy } from '@/lib/signer-policy';
+import { canExecuteOnchain } from '@/lib/env';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,6 +26,11 @@ export async function POST(req: NextRequest) {
     const parsedBody = swapExecuteRequestSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsedBody.success) {
       return NextResponse.json({ ok: false, error: zodErrorMessage(parsedBody.error) || 'Invalid request body' }, { status: 400 });
+    }
+
+    const exec = canExecuteOnchain();
+    if (!exec.ok) {
+      return NextResponse.json({ ok: false, error: `Execute disabled: ${exec.issues.join('; ')}` }, { status: 503 });
     }
 
     const rawQuote: any = parsedBody.data.quote;

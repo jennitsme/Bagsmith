@@ -9,6 +9,7 @@ import { getDevWalletKeypair } from '@/lib/dev-wallet';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { buildIdempotencyKey, claimIdempotencyKey } from '@/lib/idempotency';
 import { assertSignerPolicy } from '@/lib/signer-policy';
+import { canExecuteOnchain } from '@/lib/env';
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -61,6 +62,11 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       };
 
       if (executeOnchain) {
+        const exec = canExecuteOnchain();
+        if (!exec.ok) {
+          return NextResponse.json({ ok: false, error: `Execute disabled: ${exec.issues.join('; ')}` }, { status: 503 });
+        }
+
         if (!wallet) {
           return NextResponse.json({ ok: false, error: 'Unauthorized for on-chain execution.' }, { status: 401 });
         }
