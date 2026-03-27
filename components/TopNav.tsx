@@ -42,7 +42,7 @@ export function TopNav({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             type="text"
-            placeholder="Search projects, templates, tx..."
+            placeholder="Search apps and templates..."
             className="w-full bg-[var(--bg)] brutal-border rounded-sm py-2 pl-10 pr-4 text-sm font-mono focus:outline-none focus:border-[var(--neon)] transition-colors placeholder-[var(--text-muted)]"
           />
         </div>
