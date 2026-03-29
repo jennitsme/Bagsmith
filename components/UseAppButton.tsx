@@ -1,14 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import bs58 from 'bs58';
-import { VersionedTransaction } from '@solana/web3.js';
-
-type PhantomProvider = {
-  isPhantom?: boolean;
-  connect: () => Promise<{ publicKey: { toBase58: () => string } }>;
-  signAndSendTransaction: (tx: VersionedTransaction) => Promise<{ signature: Uint8Array | string }>;
-};
 
 export function UseAppButton({ appId }: { appId: string }) {
   const [loading, setLoading] = useState(false);
@@ -30,21 +22,8 @@ export function UseAppButton({ appId }: { appId: string }) {
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'Failed to use app');
 
       const actionMsg = data?.action?.message ? ` · ${data.action.message}` : '';
-
-      if (data?.action?.onchain?.requiresUserSignature && data?.action?.onchain?.unsignedTransaction) {
-        const provider = (window as any)?.solana as PhantomProvider | undefined;
-        if (!provider?.isPhantom) throw new Error('Phantom wallet not detected. Install Phantom first.');
-
-        await provider.connect();
-        const tx = VersionedTransaction.deserialize(bs58.decode(String(data.action.onchain.unsignedTransaction)));
-        const sent = await provider.signAndSendTransaction(tx);
-        const signature = typeof sent?.signature === 'string' ? sent.signature : bs58.encode(sent.signature);
-        setTxSig(signature);
-        setMsg(`Success. Usage count: ${data.usageCount}${actionMsg} · Signed with Phantom.`);
-      } else {
-        if (data?.action?.onchain?.signature) setTxSig(String(data.action.onchain.signature));
-        setMsg(`Success. Usage count: ${data.usageCount}${actionMsg}`);
-      }
+      if (data?.action?.onchain?.signature) setTxSig(String(data.action.onchain.signature));
+      setMsg(`Success. Usage count: ${data.usageCount}${actionMsg}`);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : 'Failed to use app');
     } finally {
