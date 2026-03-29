@@ -1,12 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import bs58 from 'bs58';
+import { VersionedTransaction } from '@solana/web3.js';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
 import type { MiniAppTemplate } from '@/lib/templates';
 
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const USDC_MINT = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
+
+type PhantomProvider = {
+  isPhantom?: boolean;
+  connect: () => Promise<{ publicKey: { toBase58: () => string } }>;
+  signAndSendTransaction: (tx: VersionedTransaction) => Promise<{ signature: Uint8Array | string }>;
+};
 
 export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemplate | null }) {
   const [prompt, setPrompt] = useState('');
@@ -148,7 +156,20 @@ export function ForgeArea({ selectedTemplate }: { selectedTemplate?: MiniAppTemp
 
       const data = await res.json();
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'Proses gagal');
-      setResult(data);
+
+      if (data?.requiresUserSignature && data?.unsignedTransaction) {
+        const provider = (window as any)?.solana as PhantomProvider | undefined;
+        if (!provider?.isPhantom) throw new Error('Phantom wallet not detected. Install Phantom first.');
+
+        await provider.connect();
+        const tx = VersionedTransaction.deserialize(bs58.decode(String(data.unsignedTransaction)));
+        const sent = await provider.signAndSendTransaction(tx);
+        const signature = typeof sent?.signature === 'string' ? sent.signature : bs58.encode(sent.signature);
+
+        setResult({ ...data, signature, userSigned: true });
+      } else {
+        setResult(data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unexpected error');
     } finally {

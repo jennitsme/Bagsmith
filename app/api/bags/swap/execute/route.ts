@@ -62,8 +62,7 @@ export async function POST(req: NextRequest) {
 
     assertSignerPolicy({ inputMint: String(inputMint), outputMint: String(outputMint), amount: String(amount) });
 
-    const wallet = getDevWalletKeypair();
-    const userPublicKey = wallet.publicKey.toBase58();
+    const userPublicKey = exec.walletMode === 'server_signer' ? getDevWalletKeypair().publicKey.toBase58() : walletSession;
 
     const swapTxPayload = await createSwapTransaction({ quoteResponse, userPublicKey });
     const swapTx = swapTxPayload?.response?.swapTransaction;
@@ -72,6 +71,17 @@ export async function POST(req: NextRequest) {
       throw new Error('Invalid swap transaction response from Bags API.');
     }
 
+    if (exec.walletMode === 'phantom') {
+      return NextResponse.json({
+        ok: true,
+        wallet: userPublicKey,
+        requiresUserSignature: true,
+        unsignedTransaction: swapTx,
+        swap: swapTxPayload,
+      });
+    }
+
+    const wallet = getDevWalletKeypair();
     const txBuffer = bs58.decode(swapTx);
     const tx = VersionedTransaction.deserialize(txBuffer);
     tx.sign([wallet]);

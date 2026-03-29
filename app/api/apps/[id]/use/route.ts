@@ -101,7 +101,6 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
           amount: sourceRun.amount,
         });
 
-        const signer = getDevWalletKeypair();
         const quote = await getTradeQuote({
           inputMint: sourceRun.inputMint,
           outputMint: sourceRun.outputMint,
@@ -110,9 +109,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
         });
 
         const quoteResponse = (quote as any)?.response ?? quote;
+        const executionWallet = exec.walletMode === 'server_signer' ? getDevWalletKeypair().publicKey.toBase58() : wallet;
         const swapTxPayload = await createSwapTransaction({
           quoteResponse,
-          userPublicKey: signer.publicKey.toBase58(),
+          userPublicKey: executionWallet,
         });
 
         const swapTx = (swapTxPayload as any)?.response?.swapTransaction;
@@ -120,15 +120,27 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
           throw new Error('Invalid swap transaction from Bags API.');
         }
 
-        const tx = VersionedTransaction.deserialize(bs58.decode(swapTx));
-        tx.sign([signer]);
-        const sent = await sendSignedTransaction(bs58.encode(tx.serialize()));
+        if (exec.walletMode === 'phantom') {
+          action.onchain = {
+            executed: false,
+            requiresUserSignature: true,
+            unsignedTransaction: swapTx,
+            wallet: executionWallet,
+            message: 'Transaction is ready. Sign and send it with Phantom.',
+          };
+        } else {
+          const signer = getDevWalletKeypair();
+          const tx = VersionedTransaction.deserialize(bs58.decode(swapTx));
+          tx.sign([signer]);
+          const sent = await sendSignedTransaction(bs58.encode(tx.serialize()));
 
-        action.onchain = {
-          executed: true,
-          signature: (sent as any)?.response || null,
-          message: 'Tipping on-chain transaction executed via Bags pipeline.',
-        };
+          action.onchain = {
+            executed: true,
+            signature: (sent as any)?.response || null,
+            wallet: executionWallet,
+            message: 'Tipping on-chain transaction executed via Bags pipeline.',
+          };
+        }
       }
     }
 

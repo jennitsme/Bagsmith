@@ -57,8 +57,9 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
+    let exec = { ok: true, issues: [] as string[], walletMode: 'phantom' as const | 'server_signer' };
     if (executeSwap) {
-      const exec = canExecuteOnchain();
+      exec = canExecuteOnchain();
       if (!exec.ok) {
         const res = NextResponse.json({ ok: false, error: `Execute disabled: ${exec.issues.join('; ')}` }, { status: 503 });
         if (shouldSetCookie) attachUserCookie(res, userId);
@@ -66,9 +67,6 @@ export async function POST(req: NextRequest) {
       }
       assertSignerPolicy({ inputMint: inputMint.trim(), outputMint: outputMint.trim(), amount: amount.trim() });
     }
-
-    const wallet = getDevWalletKeypair();
-    const userPublicKey = wallet.publicKey.toBase58();
 
     const quote = await getTradeQuote({
       inputMint: inputMint.trim(),
@@ -87,7 +85,7 @@ export async function POST(req: NextRequest) {
         transactionSent: false,
       },
       prompt,
-      wallet: userPublicKey,
+      wallet: authenticatedWallet,
       quote,
       swap: null,
       signature: null,
@@ -107,7 +105,7 @@ export async function POST(req: NextRequest) {
         mode,
         success: true,
         signature: null,
-        wallet: userPublicKey,
+        wallet: authenticatedWallet,
         error: null,
       });
       result.runId = runId;
@@ -135,7 +133,8 @@ export async function POST(req: NextRequest) {
     }
 
     const quoteResponse = quote?.response ?? quote;
-    const swapTxPayload = await createSwapTransaction({ quoteResponse, userPublicKey });
+    const executionWallet = exec.walletMode === 'server_signer' ? getDevWalletKeypair().publicKey.toBase58() : authenticatedWallet;
+    const swapTxPayload = await createSwapTransaction({ quoteResponse, userPublicKey: executionWallet });
     const swapTx = swapTxPayload?.response?.swapTransaction;
 
     if (!swapTx || typeof swapTx !== 'string') {
@@ -144,17 +143,24 @@ export async function POST(req: NextRequest) {
 
     result.stages.swapCreated = true;
     result.swap = swapTxPayload;
+    result.wallet = executionWallet;
 
-    const txBuffer = bs58.decode(swapTx);
-    const tx = VersionedTransaction.deserialize(txBuffer);
-    tx.sign([wallet]);
+    if (exec.walletMode === 'phantom') {
+      result.requiresUserSignature = true;
+      result.unsignedTransaction = swapTx;
+    } else {
+      const wallet = getDevWalletKeypair();
+      const txBuffer = bs58.decode(swapTx);
+      const tx = VersionedTransaction.deserialize(txBuffer);
+      tx.sign([wallet]);
 
-    const signedB58 = bs58.encode(tx.serialize());
-    const sendResult = await sendSignedTransaction(signedB58);
+      const signedB58 = bs58.encode(tx.serialize());
+      const sendResult = await sendSignedTransaction(signedB58);
 
-    result.stages.transactionSent = true;
-    result.signature = sendResult?.response || null;
-    result.send = sendResult;
+      result.stages.transactionSent = true;
+      result.signature = sendResult?.response || null;
+      result.send = sendResult;
+    }
 
     const runId = crypto.randomUUID();
     await appendForgeLog({
@@ -168,7 +174,7 @@ export async function POST(req: NextRequest) {
       mode,
       success: true,
       signature: result.signature,
-      wallet: userPublicKey,
+      wallet: executionWallet,
       error: null,
     });
 
