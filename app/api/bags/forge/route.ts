@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       return res;
     }
 
-    let exec = { ok: true, issues: [] as string[], walletMode: 'phantom' as const | 'server_signer' };
+    let exec = { ok: true, issues: [] as string[], walletMode: 'phantom' as 'phantom' | 'server_signer' };
     if (executeSwap) {
       exec = canExecuteOnchain();
       if (!exec.ok) {
