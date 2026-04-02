@@ -20,6 +20,14 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       return NextResponse.json({ ok: false, error: 'baseMint, claimersArray, basisPointsArray are required.' }, { status: 400 });
     }
 
+    if (claimersArray.length !== basisPointsArray.length) {
+      return NextResponse.json({ ok: false, error: 'claimersArray and basisPointsArray must have same length.' }, { status: 400 });
+    }
+
+    if (basisPointsArray.some((x) => !Number.isInteger(x) || x < 0)) {
+      return NextResponse.json({ ok: false, error: 'basisPointsArray must contain non-negative integers.' }, { status: 400 });
+    }
+
     const total = basisPointsArray.reduce((a, b) => a + b, 0);
     if (total !== 10000) {
       return NextResponse.json({ ok: false, error: 'basisPointsArray must sum to 10000.' }, { status: 400 });
@@ -42,18 +50,20 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       basisPointsArray,
     });
 
-    await prisma.miniApp.update({
-      where: { id },
-      data: { status: 'fee-share-configured' },
-    });
+    await prisma.$transaction(async (tx) => {
+      await tx.miniApp.update({
+        where: { id },
+        data: { status: 'fee-share-configured' },
+      });
 
-    await prisma.miniAppEvent.create({
-      data: {
-        appId: app.id,
-        actorWallet: wallet,
-        actionType: 'fee-share-setup',
-        payloadJson: JSON.stringify({ baseMint, claimersArray, basisPointsArray, feeShare }),
-      },
+      await tx.miniAppEvent.create({
+        data: {
+          appId: app.id,
+          actorWallet: wallet,
+          actionType: 'fee-share-setup',
+          payloadJson: JSON.stringify({ baseMint, claimersArray, basisPointsArray, feeShare }),
+        },
+      });
     });
 
     return NextResponse.json({ ok: true, feeShare });

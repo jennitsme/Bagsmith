@@ -48,6 +48,7 @@ REDIS_URL="redis://localhost:6379"
 BAGS_API_KEY="..."
 BAGS_API_BASE_URL="https://public-api-v2.bags.fm/api/v1"
 BAGS_DEV_WALLET_SECRET="..." # base58-encoded 64-byte secret key
+BAGSMITH_ENABLE_GLOBAL_ANALYTICS="false" # keep false for production by default
 ```
 
 ### 4) Run worker (separate terminal)

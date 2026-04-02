@@ -21,6 +21,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
 
     const app = await prisma.miniApp.findUnique({ where: { id } });
     if (!app) return NextResponse.json({ ok: false, error: 'App not found' }, { status: 404 });
+    if (app.status !== 'active' && app.status !== 'fee-share-configured') {
+      return NextResponse.json({ ok: false, error: `App is not usable in current status: ${app.status}` }, { status: 409 });
+    }
 
     let config: any = {};
     try {
