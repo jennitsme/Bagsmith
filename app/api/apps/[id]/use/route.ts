@@ -17,12 +17,10 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     const body = await req.json().catch(() => ({}));
     const executeOnchain = Boolean(body?.executeOnchain);
 
-    const app = await prisma.miniApp.update({
-      where: { id },
-      data: { usageCount: { increment: 1 } },
-    });
-
     const wallet = getAuthWallet(req);
+
+    const app = await prisma.miniApp.findUnique({ where: { id } });
+    if (!app) return NextResponse.json({ ok: false, error: 'App not found' }, { status: 404 });
 
     let config: any = {};
     try {
@@ -167,16 +165,25 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       };
     }
 
-    await prisma.miniAppEvent.create({
-      data: {
-        appId: app.id,
-        actorWallet: wallet || null,
-        actionType: action.type || 'generic',
-        payloadJson: JSON.stringify({ action, executeOnchain }),
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const next = await tx.miniApp.update({
+        where: { id: app.id },
+        data: { usageCount: { increment: 1 } },
+      });
+
+      await tx.miniAppEvent.create({
+        data: {
+          appId: app.id,
+          actorWallet: wallet || null,
+          actionType: action.type || 'generic',
+          payloadJson: JSON.stringify({ action, executeOnchain }),
+        },
+      });
+
+      return next;
     });
 
-    return NextResponse.json({ ok: true, appId: app.id, usageCount: app.usageCount, action });
+    return NextResponse.json({ ok: true, appId: app.id, usageCount: updated.usageCount, action });
   } catch (error) {
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'Failed to use app' }, { status: 500 });
   }

@@ -46,13 +46,13 @@ export async function appendForgeLog(log: ForgeLog) {
 
 export async function getAnalyticsSummary(
   range: '24h' | '7d' | '30d' | 'all' = 'all',
-  opts?: { userId?: string; scope?: 'self' | 'global' }
+  opts?: { wallet?: string; scope?: 'self' | 'global' }
 ) {
   const scope = opts?.scope ?? 'self';
   const dateFrom = rangeToDate(range);
 
   const where: any = {};
-  if (scope === 'self') where.userId = opts?.userId || '__none__';
+  if (scope === 'self') where.wallet = opts?.wallet || '__none__';
   if (dateFrom) where.createdAt = { gte: dateFrom };
 
   const all = await prisma.forgeRun.findMany({ where, orderBy: { createdAt: 'desc' } });
