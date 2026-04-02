@@ -56,22 +56,33 @@ BAGSMITH_ENABLE_GLOBAL_ANALYTICS="false" # keep false for production by default
 npm run worker
 ```
 
-### 5) Run app
+### 5) Run app (dev)
 ```bash
 npm run dev
+# or one command (infra + prisma + dev):
+npm run up
 ```
-Open `http://localhost:3000`
+Open `http://localhost:3000` (or next available port)
 
 ### 6) Build production bundle
 ```bash
 npm run build
-npm run start
+# preferred for output: standalone
+npm run start:standalone
+```
+
+One-command production local run:
+```bash
+npm run up:prod
 ```
 
 ## Scripts
 - `npm run dev` — start dev server (includes `prisma generate` + `prisma db push`)
 - `npm run build` — production build
-- `npm run start` — run production server
+- `npm run start` — run production server (non-standalone)
+- `npm run start:standalone` — run standalone production server
+- `npm run up` — start infra + prisma sync + dev app
+- `npm run up:prod` — start infra + prisma sync + build + standalone server
 - `npm run lint` — ESLint
 - `npm run worker` — BullMQ worker
 
