@@ -35,6 +35,7 @@ model MiniApp {
   configJson    String
   txProof       String?
   feeShareBps   Int      @default(0)
+  isPublic      Boolean  @default(false)
   status        String   @default("active")
   usageCount    Int      @default(0)
   createdAt     DateTime @default(now())

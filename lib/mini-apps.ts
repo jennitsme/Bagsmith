@@ -34,7 +34,7 @@ export async function createMiniAppFromRun(params: {
 }
 
 export async function listPublicMiniApps() {
-  return prisma.miniApp.findMany({ orderBy: { createdAt: 'desc' }, take: 100 });
+  return prisma.miniApp.findMany({ where: { isPublic: true }, orderBy: { createdAt: 'desc' }, take: 100 });
 }
 
 export async function getMiniAppById(id: string) {
